@@ -30,17 +30,28 @@ export async function POST(request: Request) {
   const email = typeof parsed.body.email === 'string' ? parsed.body.email.trim().toLowerCase() : '';
   if (!EMAIL.test(email) || email.length > 254) return errorResponse(400, 'Enter a valid email address.');
 
+  // Present when Turnstile is enabled. Supabase verifies it with the secret stored
+  // in its own dashboard, so this server never handles the CAPTCHA secret.
+  const captchaToken =
+    typeof parsed.body.captchaToken === 'string' && parsed.body.captchaToken.length <= 4096
+      ? parsed.body.captchaToken
+      : undefined;
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: `${siteOrigin(request)}/auth/callback`,
       shouldCreateUser: true,
+      captchaToken,
     },
   });
 
   if (error) {
     console.error('[api/auth/sign-in] failed:', error.status, error.message);
+    if (/captcha/i.test(error.message)) {
+      return errorResponse(400, 'Please complete the security check and try again.');
+    }
     if (error.status === 429) {
       return errorResponse(429, 'Too many sign-in emails. Wait a few minutes and try again.');
     }

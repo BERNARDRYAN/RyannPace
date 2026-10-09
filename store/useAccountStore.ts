@@ -28,7 +28,8 @@ interface AccountState {
   init: () => Promise<void>;
   openSignIn: () => void;
   closeSignIn: () => void;
-  requestMagicLink: (email: string) => Promise<Result>;
+  /** `captchaToken` is required when Turnstile is enabled (Supabase verifies it). */
+  requestMagicLink: (email: string, captchaToken?: string | null) => Promise<Result>;
   signOut: () => Promise<void>;
   loadPresets: () => Promise<void>;
   savePreset: (presetName: string, config: PosterConfig) => Promise<Result>;
@@ -107,10 +108,10 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
   openSignIn: () => set({ signInOpen: true }),
   closeSignIn: () => set({ signInOpen: false }),
 
-  requestMagicLink: async (email) => {
+  requestMagicLink: async (email, captchaToken) => {
     const res = await callApi<{ ok: true }>('/api/auth/sign-in', {
       method: 'POST',
-      body: JSON.stringify({ email, next: window.location.pathname }),
+      body: JSON.stringify({ email, next: window.location.pathname, captchaToken: captchaToken ?? undefined }),
     });
     return res.ok ? { ok: true } : { ok: false, error: res.error };
   },

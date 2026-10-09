@@ -40,6 +40,7 @@ export const ZH: Record<string, string> = {
   'Open the sign-in link in the same browser you requested it from.': '请在申请登录的同一个浏览器中打开登录链接。',
   'Sign-in failed. Please request a new link.': '登录失败，请重新获取链接。',
   'Sign in to continue.': '请先登录。',
+  'Please complete the security check and try again.': '请先完成安全验证再重试。',
 
   // ---------- Studio: route ----------
   Route: '路线',
@@ -183,6 +184,28 @@ export const ZH: Record<string, string> = {
   'Sharing was blocked by the browser, so the PNG was downloaded instead.': '浏览器阻止了分享，已改为下载 PNG。',
   'Opened “{title}” from your gallery.': '已从作品集打开“{title}”。',
   'Sign in to open posters from your gallery.': '登录后即可打开作品集中的海报。',
+
+  // ---------- Strava ----------
+  'Connect with Strava': '连接 Strava',
+  'Import from Strava': '从 Strava 导入',
+  Disconnect: '断开连接',
+  'Powered by Strava': 'Powered by Strava',
+  'No GPS': '无 GPS',
+  'No activities found on Strava.': '在 Strava 上没有找到运动记录。',
+  'Load older activities': '加载更早的记录',
+  'Imported “{name}” from Strava.': '已从 Strava 导入“{name}”。',
+  'Strava disconnected.': '已断开 Strava 连接。',
+  'Strava connected. Import a run below the dropzone.': 'Strava 已连接，可在上传区下方导入跑步记录。',
+  'Strava connection cancelled.': '已取消连接 Strava。',
+  'Allow access to your activities to import runs from Strava.': '请允许访问你的运动记录，才能从 Strava 导入。',
+  'Could not connect to Strava. Try again.': '无法连接 Strava，请重试。',
+  'Strava import is not configured on this server.': '此服务器尚未配置 Strava 导入。',
+  'Connect your Strava account first.': '请先连接你的 Strava 账号。',
+  'Invalid activity id.': '无效的运动记录 ID。',
+  'Strava rate limit reached. Try again in 15 minutes.': 'Strava 请求次数已达上限，请 15 分钟后再试。',
+  'Your Strava connection expired. Connect again.': 'Strava 连接已过期，请重新连接。',
+  'Activity not found on Strava.': '在 Strava 上找不到该运动记录。',
+  'Strava did not respond. Try again shortly.': 'Strava 没有响应，请稍后重试。',
 
   // ---------- Gallery ----------
   'Your archive': '你的收藏',

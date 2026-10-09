@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import Script from 'next/script';
 import { AccountProvider } from '@/components/account/AccountProvider';
+
+/** Cloudflare Web Analytics (cookie-free). Public token; loads only when configured. */
+const CF_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN;
 import './globals.css';
 
 const inter = Inter({
@@ -51,6 +55,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <AccountProvider />
+        {CF_ANALYTICS_TOKEN && (
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}
+          />
+        )}
       </body>
     </html>
   );

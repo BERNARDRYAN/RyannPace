@@ -91,6 +91,21 @@ test.describe('API without a session', () => {
     expect([400, 503]).toContain(res.status());
   });
 
+  test('Strava stays hidden and inert without credentials', async ({ request }) => {
+    const status = await (await request.get('/api/strava/status')).json();
+    if (status.configured) test.skip(true, 'Strava is configured on this server');
+    expect(status).toEqual({ configured: false, connected: false, athlete: null });
+    expect((await request.get('/api/strava/activities')).status()).toBe(503);
+    const connect = await request.get('/api/strava/connect', { maxRedirects: 0 });
+    expect(connect.headers()['location']).toMatch(/\/studio\?strava=unavailable$/);
+  });
+
+  test('health check reports database status without data', async ({ request }) => {
+    const body = await (await request.get('/api/health')).json();
+    expect(Object.keys(body).sort()).toEqual(['db', 'ok']);
+    expect(['ok', 'unconfigured', 'error']).toContain(body.db);
+  });
+
   test('magic-link callback without a code fails safely', async ({ request }) => {
     const res = await request.get('/auth/callback', { maxRedirects: 0 });
     expect(res.status()).toBe(307);

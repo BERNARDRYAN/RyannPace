@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const isDev = process.env.NODE_ENV !== 'production';
+// Optional Cloudflare services, allowed in the policy only when configured.
+const turnstile = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const webAnalytics = !!process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN;
 
 /**
  * Content-Security-Policy, scoped to what the app actually loads:
@@ -9,15 +12,17 @@ const isDev = process.env.NODE_ENV !== 'production';
  * - images from this origin, data:/blob: (html-to-image renders through
  *   data: SVGs; photos and exports are blobs) and Supabase signed thumbnail URLs;
  * - fonts self-hosted by next/font, inlined as data: during export;
- * - network calls only to our own BFF (Supabase is reached server-side).
+ * - network calls only to our own BFF (Supabase is reached server-side);
+ * - Cloudflare Turnstile / Web Analytics origins only when those are enabled.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${turnstile ? ' https://challenges.cloudflare.com' : ''}${webAnalytics ? ' https://static.cloudflareinsights.com' : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
-  `connect-src 'self' data: blob:${isDev ? ' ws: wss:' : ''}`,
+  `connect-src 'self' data: blob:${isDev ? ' ws: wss:' : ''}${webAnalytics ? ' https://cloudflareinsights.com' : ''}`,
+  `frame-src ${turnstile ? 'https://challenges.cloudflare.com' : "'none'"}`,
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "object-src 'none'",

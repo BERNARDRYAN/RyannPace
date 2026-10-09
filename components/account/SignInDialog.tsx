@@ -6,6 +6,8 @@ import { useAccountStore } from '@/store/useAccountStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TURNSTILE_SITE_KEY, Turnstile } from '@/components/account/Turnstile';
+import { useLocaleStore } from '@/store/useLocaleStore';
 import { useT } from '@/store/useLocaleStore';
 
 type Step = { kind: 'form'; error?: string } | { kind: 'sending' } | { kind: 'sent'; email: string };
@@ -18,6 +20,10 @@ export function SignInDialog() {
 
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<Step>({ kind: 'form' });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const locale = useLocaleStore((s) => s.locale);
+  const needsCaptcha = !!TURNSTILE_SITE_KEY;
   const t = useT();
 
   useEffect(() => {
@@ -32,7 +38,9 @@ export function SignInDialog() {
     const trimmed = email.trim();
     if (!trimmed) return;
     setStep({ kind: 'sending' });
-    const result = await requestMagicLink(trimmed);
+    const result = await requestMagicLink(trimmed, captchaToken);
+    // Turnstile tokens are single-use: always fetch a fresh one for the next attempt.
+    setCaptchaReset((n) => n + 1);
     setStep(result.ok ? { kind: 'sent', email: trimmed } : { kind: 'form', error: result.error });
   };
 
@@ -104,7 +112,14 @@ export function SignInDialog() {
                 {t(step.error)}
               </p>
             )}
-            <Button type="submit" className="mt-4 w-full" disabled={step.kind === 'sending' || !email.trim()}>
+            {open && (
+              <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} language={locale === 'zh' ? 'zh-cn' : 'en'} />
+            )}
+            <Button
+              type="submit"
+              className="mt-4 w-full"
+              disabled={step.kind === 'sending' || !email.trim() || (needsCaptcha && !captchaToken)}
+            >
               {step.kind === 'sending' ? <LoaderCircle className="animate-spin" /> : <Mail />}
               {step.kind === 'sending' ? t('Sending link…') : t('Email me a sign-in link')}
             </Button>

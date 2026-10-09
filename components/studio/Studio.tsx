@@ -19,8 +19,30 @@ import { DisplayOptions } from '@/components/controls/DisplayOptions';
 import { MetricsForm } from '@/components/controls/MetricsForm';
 import { ExportPanel } from '@/components/controls/ExportPanel';
 import { PresetsPanel } from '@/components/controls/PresetsPanel';
+import { StravaImport } from '@/components/controls/StravaImport';
 import { useT } from '@/store/useLocaleStore';
 import { tr } from '@/store/useLocaleStore';
+
+const STRAVA_RESULTS: Record<string, { kind: 'success' | 'error'; text: string }> = {
+  connected: { kind: 'success', text: 'Strava connected. Import a run below the dropzone.' },
+  denied: { kind: 'error', text: 'Strava connection cancelled.' },
+  scope: { kind: 'error', text: 'Allow access to your activities to import runs from Strava.' },
+  error: { kind: 'error', text: 'Could not connect to Strava. Try again.' },
+  unavailable: { kind: 'error', text: 'Strava import is not configured on this server.' },
+};
+
+/** Shows the outcome of the Strava OAuth redirect (?strava=…), then strips the param. */
+function useStravaRedirectNotice() {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const result = url.searchParams.get('strava');
+    if (!result) return;
+    url.searchParams.delete('strava');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    const notice = STRAVA_RESULTS[result];
+    if (notice) useAccountStore.getState().showNotice(notice);
+  }, []);
+}
 
 /** Opens /studio?poster=<id> from the gallery, then strips the param from the URL. */
 function useOpenGalleryPoster() {
@@ -84,7 +106,10 @@ function RouteControls() {
   return (
     <>
       <ControlSection id="upload" index="01" title="Route">
-        <FileUploader />
+        <div className="space-y-3">
+          <FileUploader />
+          <StravaImport />
+        </div>
       </ControlSection>
       <ControlSection id="presets" index="02" title="Saved presets">
         <PresetsPanel />
@@ -244,6 +269,7 @@ function MobileStudio() {
 
 export function Studio() {
   useOpenGalleryPoster();
+  useStravaRedirectNotice();
   // Desktop is the server/hydration default; phones switch right after hydration.
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   return isDesktop ? <DesktopStudio /> : <MobileStudio />;
