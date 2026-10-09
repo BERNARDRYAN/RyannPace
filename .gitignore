@@ -12,3 +12,8 @@ next-env.d.ts
 test-results/
 playwright-report/
 blob-report/
+
+# Cloudflare build output
+.open-next/
+.wrangler/
+.dev.vars

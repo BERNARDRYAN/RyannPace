@@ -47,6 +47,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // No next/image optimization: posters render client-side, and Cloudflare
+  // Workers can't run sharp. This keeps sharp out of the server bundle.
+  images: { unoptimized: true },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
