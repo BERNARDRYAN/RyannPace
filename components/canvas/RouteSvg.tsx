@@ -10,6 +10,13 @@ interface RouteSvgProps {
   strokeWidth?: number;
   /** Fades the route from a muted tone at the start to full color at the finish. */
   fadeFrom?: string;
+  /** Neon look: soft wide under-strokes in the route color behind a bright core. */
+  glow?: boolean;
+  /**
+   * Start/finish markers. `pin` = ring + glowing pin (editorial), `target` =
+   * HUD crosshair (cyberpunk), `dot` = small quiet dots (minimal).
+   */
+  markers?: 'pin' | 'target' | 'dot';
   className?: string;
   style?: React.CSSProperties;
 }
@@ -29,6 +36,8 @@ export function RouteSvg({
   accent,
   strokeWidth = 6,
   fadeFrom,
+  glow = false,
+  markers = 'pin',
   className,
   style,
 }: RouteSvgProps) {
@@ -101,6 +110,14 @@ export function RouteSvg({
         </radialGradient>
       </defs>
 
+      {glow && pathData && points.length > 1 && (
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d={pathData} stroke={routeColor} strokeOpacity={0.08} strokeWidth={strokeWidth * 9} />
+          <path d={pathData} stroke={routeColor} strokeOpacity={0.16} strokeWidth={strokeWidth * 4.5} />
+          <path d={pathData} stroke={routeColor} strokeOpacity={0.35} strokeWidth={strokeWidth * 2.2} />
+        </g>
+      )}
+
       {pathData && points.length > 1 && (
         <path
           d={pathData}
@@ -112,7 +129,7 @@ export function RouteSvg({
         />
       )}
 
-      {start && (
+      {start && markers === 'pin' && (
         <g>
           <circle cx={start.x} cy={start.y} r={strokeWidth * 2.6} fill={routeColor} opacity={0.12} />
           <circle
@@ -126,12 +143,52 @@ export function RouteSvg({
         </g>
       )}
 
-      {finish && points.length > 1 && (
+      {finish && points.length > 1 && markers === 'pin' && (
         <g>
           <circle cx={finish.x} cy={finish.y} r={strokeWidth * 9} fill={`url(#${id}-glow)`} />
           <circle cx={finish.x} cy={finish.y} r={strokeWidth * 2.2} fill={accent} />
           <circle cx={finish.x} cy={finish.y} r={strokeWidth * 0.8} fill={routeColor} />
         </g>
+      )}
+
+      {start && markers === 'target' && (
+        <g fill="none" stroke={routeColor} strokeWidth={strokeWidth * 0.5}>
+          <rect
+            x={start.x - strokeWidth * 2}
+            y={start.y - strokeWidth * 2}
+            width={strokeWidth * 4}
+            height={strokeWidth * 4}
+          />
+        </g>
+      )}
+
+      {finish && points.length > 1 && markers === 'target' && (
+        <g>
+          <circle cx={finish.x} cy={finish.y} r={strokeWidth * 10} fill={`url(#${id}-glow)`} />
+          <g stroke={accent} strokeWidth={strokeWidth * 0.5} fill="none">
+            <circle cx={finish.x} cy={finish.y} r={strokeWidth * 4} />
+            <line x1={finish.x - strokeWidth * 7} y1={finish.y} x2={finish.x - strokeWidth * 2.5} y2={finish.y} />
+            <line x1={finish.x + strokeWidth * 2.5} y1={finish.y} x2={finish.x + strokeWidth * 7} y2={finish.y} />
+            <line x1={finish.x} y1={finish.y - strokeWidth * 7} x2={finish.x} y2={finish.y - strokeWidth * 2.5} />
+            <line x1={finish.x} y1={finish.y + strokeWidth * 2.5} x2={finish.x} y2={finish.y + strokeWidth * 7} />
+          </g>
+          <circle cx={finish.x} cy={finish.y} r={strokeWidth * 1.3} fill={accent} />
+        </g>
+      )}
+
+      {start && markers === 'dot' && (
+        <circle
+          cx={start.x}
+          cy={start.y}
+          r={strokeWidth * 2.2}
+          fill="none"
+          stroke={routeColor}
+          strokeWidth={strokeWidth * 0.8}
+        />
+      )}
+
+      {finish && points.length > 1 && markers === 'dot' && (
+        <circle cx={finish.x} cy={finish.y} r={strokeWidth * 3.2} fill={accent} />
       )}
     </svg>
   );

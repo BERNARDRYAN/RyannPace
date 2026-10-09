@@ -18,19 +18,22 @@ export interface ButtonProps extends ComponentProps<'button'> {
   size?: keyof typeof sizes;
 }
 
-export function Button({ className, variant = 'primary', size = 'md', type = 'button', ...props }: ButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-colors',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed',
-        '[&_svg]:size-4 [&_svg]:shrink-0',
-        variants[variant],
-        sizes[size],
-        className
-      )}
-      {...props}
-    />
+/** Button styling for non-button elements, e.g. a Next <Link> that should look like a button. */
+export function buttonVariants({
+  variant = 'primary',
+  size = 'md',
+  className,
+}: { variant?: keyof typeof variants; size?: keyof typeof sizes; className?: string } = {}) {
+  return cn(
+    'inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-colors',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed',
+    '[&_svg]:size-4 [&_svg]:shrink-0',
+    variants[variant],
+    sizes[size],
+    className
   );
+}
+
+export function Button({ className, variant = 'primary', size = 'md', type = 'button', ...props }: ButtonProps) {
+  return <button type={type} className={buttonVariants({ variant, size, className })} {...props} />;
 }

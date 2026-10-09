@@ -55,13 +55,15 @@ export function downloadBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+/** Renders and downloads the poster; resolves with the PNG so callers can reuse it. */
 export async function exportPosterAsPng(
   node: HTMLElement,
   { filename = 'ryannpace-workout', pixelRatio = 2 }: ExportOptions = {}
-): Promise<void> {
+): Promise<Blob> {
   try {
     const blob = await renderPosterBlob(node, pixelRatio);
     downloadBlob(blob, filename);
+    return blob;
   } catch (error) {
     console.error('RyannPace export failed:', error);
     throw error;
@@ -81,19 +83,51 @@ export function canShareFiles(): boolean {
 
 /**
  * Opens the native share sheet (Instagram, WhatsApp, Photos…).
- * Returns false if the user dismissed the sheet.
+ * `shared` is false if the user dismissed the sheet.
  */
 export async function sharePoster(
   node: HTMLElement,
   { filename = 'ryannpace-workout', pixelRatio = 2 }: ExportOptions = {}
-): Promise<boolean> {
+): Promise<{ shared: boolean; blob: Blob }> {
   const blob = await renderPosterBlob(node, pixelRatio);
   const file = new File([blob], `${sanitizeFilename(filename)}.png`, { type: 'image/png' });
   try {
     await navigator.share({ files: [file], title: 'RyannPace' });
-    return true;
+    return { shared: true, blob };
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return false;
+    if (error instanceof DOMException && error.name === 'AbortError') return { shared: false, blob };
     throw error;
+  }
+}
+
+export const THUMBNAIL_WIDTH = 480;
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+/**
+ * Downscales an exported PNG into a small gallery thumbnail (~30–80 KB).
+ * Prefers WebP; browsers that cannot encode it (older Safari) get JPEG.
+ */
+export async function createThumbnail(png: Blob, width: number = THUMBNAIL_WIDTH): Promise<Blob> {
+  const bitmap = await createImageBitmap(png);
+  try {
+    const scale = width / bitmap.width;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D is unavailable.');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const webp = await canvasToBlob(canvas, 'image/webp', 0.82);
+    if (webp && webp.type === 'image/webp') return webp;
+    const jpeg = await canvasToBlob(canvas, 'image/jpeg', 0.85);
+    if (!jpeg) throw new Error('Could not encode the thumbnail.');
+    return jpeg;
+  } finally {
+    bitmap.close();
   }
 }

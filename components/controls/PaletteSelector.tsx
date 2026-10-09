@@ -2,16 +2,17 @@
 
 import { Check } from 'lucide-react';
 import { usePosterStore } from '@/store/usePosterStore';
-import { PALETTES } from '@/lib/poster-presets';
+import { TEMPLATE_PALETTES } from '@/lib/poster-presets';
 import { cn } from '@/lib/utils';
 
 export function PaletteSelector() {
   const activeId = usePosterStore((s) => s.config.palette.id);
+  const templateId = usePosterStore((s) => s.config.templateId);
   const setPalette = usePosterStore((s) => s.setPalette);
 
   return (
     <div className="flex flex-wrap gap-3">
-      {PALETTES.map((palette) => {
+      {TEMPLATE_PALETTES[templateId].map((palette) => {
         const active = palette.id === activeId;
         return (
           <button

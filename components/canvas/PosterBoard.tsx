@@ -1,20 +1,12 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type ComponentType, type Ref } from 'react';
-import type { TemplateId } from '@/types/poster';
+import { useLayoutEffect, useRef, useState, type Ref } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePosterStore } from '@/store/usePosterStore';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { useHydrated } from '@/hooks/useHydrated';
 import { cn } from '@/lib/utils';
-import { MagazineTemplate } from '@/components/canvas/templates/MagazineTemplate';
-
-/**
- * Template registry. Cyberpunk and Swiss/Minimal are not built yet; the
- * TemplateSelector marks them unavailable, and they fall back to Magazine.
- */
-const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, ComponentType>> = {
-  magazine: MagazineTemplate,
-};
+import { PosterRenderer } from '@/components/canvas/PosterRenderer';
 
 interface PosterBoardProps {
   /** Attached to the native-resolution poster node — pass this to the export engine. */
@@ -33,10 +25,15 @@ export function PosterBoard({ ref, className }: PosterBoardProps) {
   const [scale, setScale] = useState(0);
   const hydrated = useHydrated();
 
-  const aspectRatio = usePosterStore((s) => s.config.aspectRatio);
-  const templateId = usePosterStore((s) => s.config.templateId);
-  const { width, height } = POSTER_DIMENSIONS[aspectRatio];
-  const Template = TEMPLATE_COMPONENTS[templateId] ?? MagazineTemplate;
+  const data = usePosterStore(
+    useShallow((s) => ({
+      metrics: s.metrics,
+      config: s.config,
+      rawPoints: s.rawPoints,
+      routePoints: s.routePoints,
+    }))
+  );
+  const { width, height } = POSTER_DIMENSIONS[data.config.aspectRatio];
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -74,7 +71,7 @@ export function PosterBoard({ ref, className }: PosterBoardProps) {
         >
           {hydrated && (
             <div ref={ref} style={{ width, height }} data-poster-root="">
-              <Template />
+              <PosterRenderer {...data} />
             </div>
           )}
         </div>

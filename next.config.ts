@@ -1,21 +1,49 @@
-import path from "node:path";
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-const jsdomGlobalShim = "./lib/shims/jsdom-global.js";
+const isDev = process.env.NODE_ENV !== 'production';
+
+/**
+ * Content-Security-Policy, scoped to what the app actually loads:
+ * - scripts/styles from this origin ('unsafe-inline' is required by Next's
+ *   inline bootstrap scripts without a nonce middleware; dev also needs eval);
+ * - images from this origin, data:/blob: (html-to-image renders through
+ *   data: SVGs; photos and exports are blobs) and Supabase signed thumbnail URLs;
+ * - fonts self-hosted by next/font, inlined as data: during export;
+ * - network calls only to our own BFF (Supabase is reached server-side).
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://*.supabase.co",
+  "font-src 'self' data:",
+  `connect-src 'self' data: blob:${isDev ? ' ws: wss:' : ''}`,
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
+].join('; ');
+
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  // Legacy clickjacking guard for browsers that ignore frame-ancestors.
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()' },
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  // Browsers only honor HSTS over HTTPS, so this is inert on localhost.
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  turbopack: {
-    resolveAlias: {
-      "jsdom-global": jsdomGlobalShim,
-    },
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "jsdom-global": path.resolve(process.cwd(), jsdomGlobalShim),
-    };
-    return config;
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
   },
 };
 

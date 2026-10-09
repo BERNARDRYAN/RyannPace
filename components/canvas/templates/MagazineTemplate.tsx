@@ -1,16 +1,9 @@
-'use client';
-
 import type { CSSProperties } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import type { AspectRatio, WorkoutMetrics } from '@/types/poster';
-import { usePosterStore } from '@/store/usePosterStore';
+import type { AspectRatio } from '@/types/poster';
+import type { PosterData } from '@/components/canvas/PosterRenderer';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
-import {
-  formatCoordinate,
-  formatDuration,
-  formatPosterDate,
-  formatPosterTime,
-} from '@/lib/format';
+import { formatCoordinate, formatPosterDate, formatPosterTime } from '@/lib/format';
+import { MONO, SANS, SERIF, buildMetricCells, dayOfYear, serialFor } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
 import { ElevationProfile } from '@/components/canvas/ElevationProfile';
 import { Barcode } from '@/components/canvas/Barcode';
@@ -83,61 +76,11 @@ const TOKENS: Record<AspectRatio, LayoutTokens> = {
   },
 };
 
-const MONO = 'var(--font-jetbrains-mono), ui-monospace, monospace';
-const SANS = 'var(--font-inter), ui-sans-serif, system-ui, sans-serif';
-const SERIF = 'var(--font-instrument-serif), ui-serif, Georgia, serif';
-
-interface MetricCell {
-  label: string;
-  value: string;
-  unit?: string;
-  /** Relative column width in the single-row layout; durations like 1:23:45 need more room. */
-  weight: number;
-}
-
-function buildMetricCells(metrics: WorkoutMetrics, showHeartRate: boolean): MetricCell[] {
-  const cells: MetricCell[] = [
-    { label: 'Distance', value: metrics.distanceKm.toFixed(2), unit: 'km', weight: 1.1 },
-    { label: 'Time', value: formatDuration(metrics.durationSeconds), weight: 1.3 },
-    { label: 'Elev. Gain', value: String(Math.round(metrics.elevationGainMeters)), unit: 'm', weight: 0.9 },
-  ];
-  if (showHeartRate && metrics.heartRateAvg) {
-    cells.push({ label: 'Avg HR', value: String(Math.round(metrics.heartRateAvg)), unit: 'bpm', weight: 0.9 });
-  } else if (metrics.caloriesBurned) {
-    cells.push({ label: 'Energy', value: String(Math.round(metrics.caloriesBurned)), unit: 'kcal', weight: 0.9 });
-  }
-  return cells;
-}
-
-function dayOfYear(iso: string): number {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 1;
-  const start = new Date(d.getFullYear(), 0, 0);
-  return Math.floor((d.getTime() - start.getTime()) / 86_400_000);
-}
-
-function serialFor(metrics: WorkoutMetrics): string {
-  const d = new Date(metrics.date);
-  const stamp = Number.isNaN(d.getTime())
-    ? '00000000'
-    : `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  return `RP-${stamp}-${String(Math.round(metrics.distanceKm * 100)).padStart(4, '0')}`;
-}
-
 /**
  * Swiss / editorial running poster. Rendered at native export resolution
- * (1080 px wide); PosterBoard scales it down for the on-screen preview.
+ * (1080 px wide); PosterBoard and PosterPreview scale it down for display.
  */
-export function MagazineTemplate() {
-  const { metrics, config, rawPoints, routePoints } = usePosterStore(
-    useShallow((s) => ({
-      metrics: s.metrics,
-      config: s.config,
-      rawPoints: s.rawPoints,
-      routePoints: s.routePoints,
-    }))
-  );
-
+export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: PosterData) {
   const { palette, aspectRatio } = config;
   const t = TOKENS[aspectRatio];
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
@@ -475,9 +418,6 @@ export function MagazineTemplate() {
               }}
             >
               {config.watermarkText}
-            </div>
-            <div style={{ ...monoLabel, fontSize: t.label - 4, letterSpacing: '0.34em', marginTop: 8 }}>
-              Ryann Suite
             </div>
           </>
         )}

@@ -1,4 +1,4 @@
--- RyannPace presets table (run in the Supabase SQL editor). Mirrors RyannPace_PLAN.md §5.
+-- 001 · RyannPace presets table. Already applied if you ran the original schema.sql.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS public.ryannpace_presets (

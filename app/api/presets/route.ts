@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PosterConfig, UserPreset } from '@/types/poster';
-import { bearerToken, createSupabaseForUser, isSupabaseConfigured } from '@/lib/supabase';
+import { errorResponse, readJsonObject } from '@/lib/api';
+import { requireUser } from '@/lib/supabase';
 import { sanitizePosterConfig } from '@/lib/preset-validation';
 
 /**
@@ -11,15 +11,16 @@ import { sanitizePosterConfig } from '@/lib/preset-validation';
  *   POST   /api/presets          body { presetName, config } -> { preset: UserPreset } (201)
  *   DELETE /api/presets?id=uuid  -> 204
  *
- * Every request needs `Authorization: Bearer <supabase access token>`. The
- * token is verified with Supabase Auth and forwarded to Postgres, where Row
- * Level Security restricts rows to their owner.
+ * Authenticated by the httpOnly session cookies set at /auth/callback. Queries
+ * run as the signed-in user, so Row Level Security restricts rows to their owner.
  */
 
 export const dynamic = 'force-dynamic';
 
 const TABLE = 'ryannpace_presets';
-const MAX_PRESETS_RETURNED = 100;
+const COLUMNS = 'id, user_id, preset_name, config, created_at';
+/** Keeps any one account from filling the free-tier database. */
+const MAX_PRESETS_PER_USER = 50;
 const MAX_BODY_BYTES = 16 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -41,75 +42,61 @@ function toUserPreset(row: PresetRow): UserPreset {
   };
 }
 
-function errorResponse(status: number, message: string) {
-  return NextResponse.json({ error: message }, { status });
-}
-
-type AuthResult =
-  | { ok: true; supabase: SupabaseClient; userId: string }
-  | { ok: false; response: NextResponse };
-
-async function authenticate(request: Request): Promise<AuthResult> {
-  if (!isSupabaseConfigured()) {
-    return { ok: false, response: errorResponse(503, 'Preset storage is not configured on this server.') };
-  }
-  const token = bearerToken(request);
-  if (!token) {
-    return { ok: false, response: errorResponse(401, 'Missing bearer token.') };
-  }
-  const supabase = createSupabaseForUser(token);
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) {
-    return { ok: false, response: errorResponse(401, 'Invalid or expired session.') };
-  }
-  return { ok: true, supabase, userId: data.user.id };
-}
+const authenticate = (request: Request, { mutating }: { mutating: boolean }) =>
+  requireUser(request, { mutating, feature: 'Preset storage' });
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request);
+  const auth = await authenticate(request, { mutating: false });
   if (!auth.ok) return auth.response;
 
   const { data, error } = await auth.supabase
     .from(TABLE)
-    .select('id, user_id, preset_name, config, created_at')
+    .select(COLUMNS)
     .eq('user_id', auth.userId)
     .order('created_at', { ascending: false })
-    .limit(MAX_PRESETS_RETURNED);
+    .limit(MAX_PRESETS_PER_USER);
 
   if (error) {
     console.error('[api/presets] list failed:', error.message);
     return errorResponse(500, 'Could not load presets.');
   }
-  return NextResponse.json({ presets: (data as PresetRow[]).map(toUserPreset) });
+  return NextResponse.json(
+    { presets: (data as PresetRow[]).map(toUserPreset) },
+    { headers: { 'Cache-Control': 'no-store' } }
+  );
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request);
+  const auth = await authenticate(request, { mutating: true });
   if (!auth.ok) return auth.response;
 
-  const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) return errorResponse(413, 'Preset payload is too large.');
+  const parsed = await readJsonObject(request, MAX_BODY_BYTES);
+  if ('error' in parsed) return parsed.error;
 
-  let body: unknown;
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    return errorResponse(400, 'Body must be valid JSON.');
-  }
-  if (typeof body !== 'object' || body === null) return errorResponse(400, 'Body must be an object.');
-
-  const { presetName, config } = body as { presetName?: unknown; config?: unknown };
+  const { presetName, config } = parsed.body;
   const name = typeof presetName === 'string' ? presetName.trim() : '';
   if (!name || name.length > 100) {
-    return errorResponse(400, 'presetName must be 1–100 characters.');
+    return errorResponse(400, 'Preset name must be 1–100 characters.');
   }
   const cleanConfig = sanitizePosterConfig(config);
   if (!cleanConfig) return errorResponse(400, 'config is not a valid PosterConfig.');
 
+  const { count, error: countError } = await auth.supabase
+    .from(TABLE)
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', auth.userId);
+  if (countError) {
+    console.error('[api/presets] count failed:', countError.message);
+    return errorResponse(500, 'Could not save preset.');
+  }
+  if ((count ?? 0) >= MAX_PRESETS_PER_USER) {
+    return errorResponse(409, `You can keep up to ${MAX_PRESETS_PER_USER} presets. Delete one first.`);
+  }
+
   const { data, error } = await auth.supabase
     .from(TABLE)
     .insert({ user_id: auth.userId, preset_name: name, config: cleanConfig })
-    .select('id, user_id, preset_name, config, created_at')
+    .select(COLUMNS)
     .single();
 
   if (error) {
@@ -120,7 +107,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await authenticate(request);
+  const auth = await authenticate(request, { mutating: true });
   if (!auth.ok) return auth.response;
 
   const id = new URL(request.url).searchParams.get('id');

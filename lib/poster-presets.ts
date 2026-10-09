@@ -1,12 +1,14 @@
 import type {
   AspectRatio,
   ColorPalette,
+  CoordinatePoint,
   PosterConfig,
   RawGpxPoint,
   TemplateId,
   WorkoutMetrics,
 } from '@/types/poster';
 import { calculatePace, computeTrackStats, haversineMeters } from '@/lib/gpx-calculator';
+import { downsamplePoints, normalizeGpxCoordinates } from '@/lib/coordinate-normalizer';
 
 /** Native (1x) canvas size per ratio. Exports multiply this by the pixel ratio. */
 export const POSTER_DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
@@ -21,13 +23,31 @@ export const ROUTE_VIEWBOX = { width: 1000, height: 1000, padding: 24 } as const
 /** Upper bound on rendered route vertices; keeps the SVG fast on 10k+ point files. */
 export const MAX_ROUTE_POINTS = 1500;
 
+/** Thins raw points and projects them into ROUTE_VIEWBOX space for the route SVG. */
+export function buildRoute(rawPoints: RawGpxPoint[]): {
+  rawPoints: RawGpxPoint[];
+  routePoints: CoordinatePoint[];
+} {
+  const thinned = downsamplePoints(rawPoints, MAX_ROUTE_POINTS);
+  return {
+    rawPoints: thinned,
+    routePoints: normalizeGpxCoordinates(
+      thinned,
+      ROUTE_VIEWBOX.width,
+      ROUTE_VIEWBOX.height,
+      ROUTE_VIEWBOX.padding
+    ),
+  };
+}
+
 export const TEMPLATES: { id: TemplateId; name: string; tagline: string; available: boolean }[] = [
   { id: 'magazine', name: 'Editorial', tagline: 'Swiss / magazine', available: true },
-  { id: 'cyberpunk', name: 'Cyberpunk', tagline: 'OLED neon HUD', available: false },
-  { id: 'swiss', name: 'Minimal', tagline: 'Japanese grid', available: false },
+  { id: 'cyberpunk', name: 'Cyberpunk', tagline: 'OLED neon HUD', available: true },
+  { id: 'swiss', name: 'Minimal', tagline: 'Japanese calm', available: true },
 ];
 
-export const PALETTES: ColorPalette[] = [
+/** Editorial / magazine palettes. */
+export const MAGAZINE_PALETTES: ColorPalette[] = [
   {
     id: 'paper',
     name: 'Newsprint',
@@ -89,6 +109,113 @@ function relativeLuminance(hex: string): number {
   });
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 }
+
+/** Pure-black OLED bases with neon route and accent pairs. */
+export const CYBERPUNK_PALETTES: ColorPalette[] = [
+  {
+    id: 'neon',
+    name: 'Neon',
+    background: '#000000',
+    cardBackground: '#05070B',
+    primaryText: '#E8FFFB',
+    secondaryText: '#5E7385',
+    accent: '#FF2BD6',
+    routeColor: '#00F0FF',
+  },
+  {
+    id: 'acid',
+    name: 'Acid',
+    background: '#000000',
+    cardBackground: '#060804',
+    primaryText: '#F4FFE6',
+    secondaryText: '#66745A',
+    accent: '#FF6A00',
+    routeColor: '#C6FF00',
+  },
+  {
+    id: 'ultraviolet',
+    name: 'Ultraviolet',
+    background: '#04000C',
+    cardBackground: '#0A0418',
+    primaryText: '#F3ECFF',
+    secondaryText: '#6F5E92',
+    accent: '#FFD400',
+    routeColor: '#A64DFF',
+  },
+  {
+    id: 'ember',
+    name: 'Ember',
+    background: '#050000',
+    cardBackground: '#0D0303',
+    primaryText: '#FFEDE6',
+    secondaryText: '#7E4D40',
+    accent: '#FFC400',
+    routeColor: '#FF3B1F',
+  },
+];
+
+/** Quiet, earthy Japanese-minimal palettes. */
+export const MINIMAL_PALETTES: ColorPalette[] = [
+  {
+    id: 'washi',
+    name: 'Washi',
+    background: '#F5F1EA',
+    cardBackground: '#ECE5D8',
+    primaryText: '#2B2620',
+    secondaryText: '#8E8273',
+    accent: '#B5532E',
+    routeColor: '#2B2620',
+  },
+  {
+    id: 'matcha',
+    name: 'Matcha',
+    background: '#EDF0E4',
+    cardBackground: '#E1E6D4',
+    primaryText: '#2D3526',
+    secondaryText: '#7F8972',
+    accent: '#5F7F2A',
+    routeColor: '#2D3526',
+  },
+  {
+    id: 'sakura',
+    name: 'Sakura',
+    background: '#F8EDEB',
+    cardBackground: '#F0DFDB',
+    primaryText: '#3A2A2A',
+    secondaryText: '#9D8582',
+    accent: '#D0606E',
+    routeColor: '#3A2A2A',
+  },
+  {
+    id: 'aizome',
+    name: 'Aizome',
+    background: '#E8ECF2',
+    cardBackground: '#DCE2EB',
+    primaryText: '#1E2A45',
+    secondaryText: '#76829B',
+    accent: '#C4462E',
+    routeColor: '#1E2A45',
+  },
+  {
+    id: 'sumi',
+    name: 'Sumi',
+    background: '#1C1B19',
+    cardBackground: '#262421',
+    primaryText: '#EDE8DF',
+    secondaryText: '#8A847A',
+    accent: '#C9A45C',
+    routeColor: '#EDE8DF',
+  },
+];
+
+export const TEMPLATE_PALETTES: Record<TemplateId, ColorPalette[]> = {
+  magazine: MAGAZINE_PALETTES,
+  cyberpunk: CYBERPUNK_PALETTES,
+  swiss: MINIMAL_PALETTES,
+};
+
+/** Every palette across templates (for lookups by id). */
+export const PALETTES: ColorPalette[] = [...MAGAZINE_PALETTES, ...CYBERPUNK_PALETTES, ...MINIMAL_PALETTES];
 
 export function contrastModeFor(palette: ColorPalette): 'dark' | 'light' {
   return relativeLuminance(palette.background) < 0.35 ? 'dark' : 'light';

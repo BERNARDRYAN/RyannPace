@@ -30,17 +30,16 @@ export function formatPace(paceMinutes: number, paceSeconds: number): string {
   return `${String(paceMinutes).padStart(2, '0')}'${String(paceSeconds).padStart(2, '0')}"`;
 }
 
-/** 1.290 -> `N 1°17'24.0"` */
+/**
+ * 1.290 -> `N 1°17'`. Deliberately coarse (whole arc-minutes, ~1.8 km): posters
+ * get shared publicly, and a run that starts at home must not print the address.
+ */
 export function formatCoordinate(value: number, axis: 'lat' | 'lon'): string {
   const hemisphere = axis === 'lat' ? (value >= 0 ? 'N' : 'S') : value >= 0 ? 'E' : 'W';
-  const abs = Math.abs(value);
-  const degrees = Math.floor(abs);
-  const minutesFloat = (abs - degrees) * 60;
-  const minutes = Math.floor(minutesFloat);
-  const seconds = (minutesFloat - minutes) * 60;
-  return `${hemisphere} ${degrees}°${String(minutes).padStart(2, '0')}'${seconds
-    .toFixed(1)
-    .padStart(4, '0')}"`;
+  const totalMinutes = Math.floor(Math.abs(value) * 60);
+  const degrees = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hemisphere} ${degrees}°${String(minutes).padStart(2, '0')}'`;
 }
 
 /** ISO string -> "09 OCT 2026" (local time). */

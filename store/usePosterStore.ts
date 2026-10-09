@@ -10,16 +10,21 @@ import type {
   TemplateId,
   WorkoutMetrics,
 } from '@/types/poster';
-import { downsamplePoints, normalizeGpxCoordinates } from '@/lib/coordinate-normalizer';
+import type { PosterRecipe } from '@/types/gallery';
+import { downsamplePoints } from '@/lib/coordinate-normalizer';
 import { calculatePace, computeTrackStats, extractAverageHeartRate } from '@/lib/gpx-calculator';
+import { parseGpx } from '@/lib/gpx-parser';
 import {
   DEFAULT_CONFIG,
-  MAX_ROUTE_POINTS,
-  ROUTE_VIEWBOX,
+  TEMPLATE_PALETTES,
+  buildRoute,
   contrastModeFor,
   generateSampleRoute,
   metricsFromSample,
 } from '@/lib/poster-presets';
+
+/** Route points kept in a gallery recipe: plenty for the SVG, small enough for the DB. */
+const RECIPE_ROUTE_POINTS = 600;
 
 export const MAX_GPX_FILE_BYTES = 25 * 1024 * 1024;
 
@@ -47,23 +52,23 @@ interface PosterState {
   loadGpxFile: (file: File) => Promise<void>;
   loadSample: () => void;
   clearGpxError: () => void;
+  /** Restores a poster saved in the gallery. */
+  loadRecipe: (recipe: PosterRecipe) => void;
 }
 
-function projectRoute(rawPoints: RawGpxPoint[]) {
-  const thinned = downsamplePoints(rawPoints, MAX_ROUTE_POINTS);
+/** Snapshot of the current poster for the gallery (no background photo, compact route). */
+export function currentRecipe(): PosterRecipe {
+  const { metrics, config, rawPoints } = usePosterStore.getState();
   return {
-    rawPoints: thinned,
-    routePoints: normalizeGpxCoordinates(
-      thinned,
-      ROUTE_VIEWBOX.width,
-      ROUTE_VIEWBOX.height,
-      ROUTE_VIEWBOX.padding
-    ),
+    version: 1,
+    metrics,
+    config: { ...config, customOverlayImage: null },
+    route: downsamplePoints(rawPoints, RECIPE_ROUTE_POINTS).map((p) => ({
+      lat: Number(p.lat.toFixed(6)),
+      lon: Number(p.lon.toFixed(6)),
+      ...(typeof p.ele === 'number' ? { ele: Number(p.ele.toFixed(1)) } : {}),
+    })),
   };
-}
-
-function finiteOr(value: number | null | undefined): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 /** Guards against an older, slower parse overwriting a newer upload. */
@@ -74,7 +79,7 @@ const sampleRoute = generateSampleRoute();
 export const usePosterStore = create<PosterState>()((set, get) => ({
   metrics: metricsFromSample(sampleRoute),
   config: DEFAULT_CONFIG,
-  ...projectRoute(sampleRoute),
+  ...buildRoute(sampleRoute),
   isSampleData: true,
   gpxStatus: 'idle',
   gpxError: null,
@@ -100,38 +105,25 @@ export const usePosterStore = create<PosterState>()((set, get) => ({
       return { config };
     }),
 
-  setTemplate: (templateId) => get().updateConfig({ templateId }),
+  setTemplate: (templateId) => {
+    // Each template has its own palette family; keep the palette only if it belongs to the new one.
+    const palettes = TEMPLATE_PALETTES[templateId];
+    const current = get().config.palette;
+    const palette = palettes.some((p) => p.id === current.id) ? current : palettes[0];
+    get().updateConfig({ templateId, palette });
+  },
   setAspectRatio: (aspectRatio) => get().updateConfig({ aspectRatio }),
   setPalette: (palette) => get().updateConfig({ palette }),
 
-  setRoute: (rawPoints) => set(projectRoute(rawPoints)),
+  setRoute: (rawPoints) => set(buildRoute(rawPoints)),
 
   loadGpxString: async (gpxContent, fileName) => {
     const loadId = ++latestLoadId;
     set({ gpxStatus: 'loading', gpxError: null });
 
     try {
-      // Loaded on demand: gpxparser needs the browser DOMParser and is not needed for first paint.
-      const { default: GpxParser } = await import('gpxparser');
-      const gpx = new GpxParser();
-      gpx.parse(gpxContent);
-
-      const sourcePoints = [
-        ...gpx.tracks.flatMap((track) => track.points),
-        ...(gpx.tracks.length === 0 ? gpx.routes.flatMap((route) => route.points) : []),
-      ];
-
-      const points: RawGpxPoint[] = sourcePoints
-        .filter((pt) => Number.isFinite(pt.lat) && Number.isFinite(pt.lon))
-        .map((pt) => {
-          const time = pt.time instanceof Date && !Number.isNaN(pt.time.getTime()) ? pt.time : null;
-          return {
-            lat: pt.lat,
-            lon: pt.lon,
-            ele: finiteOr(pt.ele),
-            time: time ? time.toISOString() : undefined,
-          };
-        });
+      const gpx = parseGpx(gpxContent);
+      const points = gpx.points;
 
       if (points.length < 2) {
         throw new Error('No GPS track found. Make sure the file contains <trkpt> or <rtept> points.');
@@ -140,14 +132,14 @@ export const usePosterStore = create<PosterState>()((set, get) => ({
       const stats = computeTrackStats(points);
       const heartRateAvg = extractAverageHeartRate(gpxContent);
       const distanceKm = Number(stats.distanceKm.toFixed(2));
-      const title = gpx.tracks[0]?.name || gpx.routes[0]?.name || gpx.metadata?.name;
-      const metadataTime = gpx.metadata?.time ? new Date(gpx.metadata.time) : null;
+      const title = gpx.name;
+      const metadataTime = gpx.time ? new Date(gpx.time) : null;
 
       if (loadId !== latestLoadId) return;
 
       const current = get().metrics;
       set({
-        ...projectRoute(points),
+        ...buildRoute(points),
         isSampleData: false,
         gpxStatus: 'ready',
         gpxError: null,
@@ -199,9 +191,22 @@ export const usePosterStore = create<PosterState>()((set, get) => ({
   loadSample: () => {
     latestLoadId++;
     set({
-      ...projectRoute(sampleRoute),
+      ...buildRoute(sampleRoute),
       metrics: metricsFromSample(sampleRoute),
       isSampleData: true,
+      gpxStatus: 'idle',
+      gpxError: null,
+      gpxFileName: null,
+    });
+  },
+
+  loadRecipe: (recipe) => {
+    latestLoadId++;
+    set({
+      ...buildRoute(recipe.route),
+      metrics: recipe.metrics,
+      config: { ...recipe.config, customOverlayImage: null },
+      isSampleData: false,
       gpxStatus: 'idle',
       gpxError: null,
       gpxFileName: null,

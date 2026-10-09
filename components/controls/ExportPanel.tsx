@@ -2,10 +2,14 @@
 
 import { useState, useSyncExternalStore, type RefObject } from 'react';
 import { Check, CircleAlert, Download, LoaderCircle, Share2 } from 'lucide-react';
-import { usePosterStore } from '@/store/usePosterStore';
+import Link from 'next/link';
+import { currentRecipe, usePosterStore } from '@/store/usePosterStore';
+import { useAccountStore } from '@/store/useAccountStore';
+import { useGalleryStore } from '@/store/useGalleryStore';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import {
   canShareFiles,
+  createThumbnail,
   exportPosterAsPng,
   sharePoster,
   type ExportPixelRatio,
@@ -17,6 +21,23 @@ type ExportState = 'idle' | 'rendering' | 'done' | 'error';
 
 const noopSubscribe = () => () => {};
 
+/**
+ * Files an exported poster in the signed-in user's gallery. Runs after the
+ * download has started, so a gallery hiccup never blocks the export itself.
+ */
+async function saveToGallery(png: Blob) {
+  if (useAccountStore.getState().status !== 'signed-in') return;
+  const { showNotice } = useAccountStore.getState();
+  try {
+    const thumbnail = await createThumbnail(png);
+    const res = await useGalleryStore.getState().save(currentRecipe(), thumbnail);
+    if (!res.ok) showNotice({ kind: 'error', text: `Exported, but not saved to your gallery: ${res.error}` });
+    else if (!res.data.skipped) showNotice({ kind: 'success', text: 'Exported and saved to your gallery.' });
+  } catch {
+    showNotice({ kind: 'error', text: 'Exported, but the gallery thumbnail could not be created.' });
+  }
+}
+
 interface ExportPanelProps {
   posterRef: RefObject<HTMLDivElement | null>;
 }
@@ -26,6 +47,8 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
   const [state, setState] = useState<ExportState>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const shareSupported = useSyncExternalStore(noopSubscribe, canShareFiles, () => false);
+  const accountStatus = useAccountStore((s) => s.status);
+  const openSignIn = useAccountStore((s) => s.openSignIn);
 
   const aspectRatio = usePosterStore((s) => s.config.aspectRatio);
   const title = usePosterStore((s) => s.metrics.activityTitle);
@@ -41,22 +64,25 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
     try {
       if (action === 'share') {
         try {
-          const shared = await sharePoster(node, { filename, pixelRatio });
+          const { shared, blob } = await sharePoster(node, { filename, pixelRatio });
           setState(shared ? 'done' : 'idle');
+          if (shared) void saveToGallery(blob);
           return;
         } catch (error) {
           // Safari drops the user-gesture window during a long render; fall back to a download.
           if (error instanceof DOMException && error.name === 'NotAllowedError') {
-            await exportPosterAsPng(node, { filename, pixelRatio });
+            const blob = await exportPosterAsPng(node, { filename, pixelRatio });
             setMessage('Sharing was blocked by the browser, so the PNG was downloaded instead.');
             setState('done');
+            void saveToGallery(blob);
             return;
           }
           throw error;
         }
       }
-      await exportPosterAsPng(node, { filename, pixelRatio });
+      const blob = await exportPosterAsPng(node, { filename, pixelRatio });
       setState('done');
+      void saveToGallery(blob);
     } catch {
       setState('error');
       setMessage('Export failed. Try 1x resolution or a smaller background photo.');
@@ -96,6 +122,23 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
         )}
       </div>
 
+      {accountStatus === 'signed-in' && !message && (
+        <p className="text-center text-[11px] text-muted">
+          Exports are saved to your{' '}
+          <Link href="/gallery" className="underline underline-offset-2 hover:text-ink">
+            gallery
+          </Link>
+          .
+        </p>
+      )}
+      {accountStatus === 'signed-out' && !message && (
+        <p className="text-center text-[11px] text-muted">
+          <button type="button" onClick={openSignIn} className="underline underline-offset-2 hover:text-ink">
+            Sign in
+          </button>{' '}
+          to keep a gallery of every poster you export.
+        </p>
+      )}
       {message && (
         <p
           role={state === 'error' ? 'alert' : 'status'}
