@@ -10,7 +10,7 @@ async function request<T>(input: string, init?: RequestInit): Promise<Result<T>>
     const res = await fetch(input, { ...init, credentials: 'same-origin', cache: 'no-store' });
     if (res.status === 204) return { ok: true, data: undefined as T };
     const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-    if (!res.ok) return { ok: false, status: res.status, error: body?.error ?? `Request failed (${res.status}).` };
+    if (!res.ok) return { ok: false, status: res.status, error: body?.error ?? 'Request failed. Please try again.' };
     return { ok: true, data: body as T };
   } catch {
     return { ok: false, status: 0, error: 'Network error. Check your connection.' };

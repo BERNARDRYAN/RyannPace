@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { AspectRatio } from '@/types/poster';
 import type { PosterData } from '@/components/canvas/PosterRenderer';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
-import { formatCoordinate, formatPosterDate, formatPosterTime } from '@/lib/format';
+import { formatCoordinate, formatPosterTime } from '@/lib/format';
 import { MONO, SANS, SERIF, buildMetricCells, dayOfYear, serialFor } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
 import { displayDistance, distanceLabel, paceParts } from '@/lib/units';
@@ -11,6 +11,8 @@ import { SplitsChart } from '@/components/canvas/SplitsChart';
 import { splitsFor } from '@/lib/splits';
 import { Barcode } from '@/components/canvas/Barcode';
 import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
+import { useLocaleStore, useT } from '@/store/useLocaleStore';
+import { formatDateLong } from '@/lib/i18n';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -85,6 +87,8 @@ const TOKENS: Record<AspectRatio, LayoutTokens> = {
  * (1080 px wide); PosterBoard and PosterPreview scale it down for display.
  */
 export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: PosterData) {
+  const tx = useT();
+  const locale = useLocaleStore((s) => s.locale);
   const { palette, aspectRatio } = config;
   const t = TOKENS[aspectRatio];
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
@@ -96,7 +100,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
   const unit = distanceLabel(config.units);
   const start = rawPoints[0];
   const serial = serialFor(metrics);
-  const dateLabel = formatPosterDate(metrics.date);
+  const dateLabel = formatDateLong(metrics.date, locale);
   const timeLabel = formatPosterTime(metrics.date);
   const splits = splitsFor(metrics, config.units);
   const showSplits = config.chart === 'splits' && splits.length >= 2;
@@ -139,8 +143,10 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
           color: palette.primaryText,
         }}
       >
-        <span style={{ fontWeight: 600 }}>RyannPace Editorial</span>
-        <span style={{ color: palette.secondaryText }}>Run № {String(dayOfYear(metrics.date)).padStart(3, '0')}</span>
+        <span style={{ fontWeight: 600 }}>{tx('RyannPace Editorial')}</span>
+        <span style={{ color: palette.secondaryText }}>
+          {tx('Run № {n}', { n: String(dayOfYear(metrics.date)).padStart(3, '0') })}
+        </span>
         <span
           style={{
             border: `2px solid ${palette.primaryText}`,
@@ -166,9 +172,9 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
         <span>
           {start
             ? `${formatCoordinate(start.lat, 'lat')}  ·  ${formatCoordinate(start.lon, 'lon')}`
-            : 'Coordinates unavailable'}
+            : tx('Coordinates unavailable')}
         </span>
-        {timeLabel && <span>Start {timeLabel}</span>}
+        {timeLabel && <span>{tx('Start {time}', { time: timeLabel })}</span>}
       </div>
     </header>
   );
@@ -196,7 +202,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
           paddingBottom: t.title * 0.06,
         }}
       >
-        {metrics.activityTitle || 'Untitled Run'}
+        {metrics.activityTitle || tx('Untitled Run')}
       </h1>
     </section>
   );
@@ -237,7 +243,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
       {cornerMark({ bottom: 10, right: 12 })}
 
       <div style={{ ...monoLabel, display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span>Fig. 01 — Route Trace</span>
+        <span>{tx('Fig. 01 — Route Trace')}</span>
         <span>N ↑</span>
       </div>
 
@@ -298,8 +304,8 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
   const paceBlock = (
     <section style={{ flexShrink: 0, marginTop: isSplit ? 0 : t.sectionGap }}>
       <div style={{ ...monoLabel, display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: palette.primaryText, fontWeight: 600 }}>Average Pace</span>
-        <span>Min / {unit}</span>
+        <span style={{ color: palette.primaryText, fontWeight: 600 }}>{tx('Average Pace')}</span>
+        <span>{tx('Min / {unit}', { unit })}</span>
       </div>
       <div
         style={{
@@ -348,7 +354,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
               minWidth: 0,
             }}
           >
-            <div style={monoLabel}>{cell.label}</div>
+            <div style={monoLabel}>{tx(cell.label)}</div>
             <div
               style={{
                 fontFamily: SANS,
@@ -422,7 +428,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
               color: palette.primaryText,
             }}
           >
-            RyannPace // Verified Run
+            {tx('RyannPace // Verified Run')}
           </div>
           <div style={{ ...monoLabel, fontSize: t.label - 4, letterSpacing: '0.24em', marginTop: 6 }}>
             {serial}
@@ -433,7 +439,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
       <div style={{ textAlign: 'right', minWidth: 0 }}>
         {metrics.gearBrand && (
           <div style={{ ...monoLabel, fontSize: t.label - 2, marginBottom: t.label * 0.6 }}>
-            Gear — {metrics.gearBrand}
+            {tx('Gear')} — {metrics.gearBrand}
           </div>
         )}
         {config.showWatermark && config.watermarkText.trim() && (

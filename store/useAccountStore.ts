@@ -49,7 +49,7 @@ async function callApi<T>(input: string, init?: RequestInit): Promise<{ ok: true
     if (res.status === 204) return { ok: true, data: undefined as T };
     const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
     if (!res.ok) {
-      return { ok: false, status: res.status, error: body?.error ?? `Request failed (${res.status}).` };
+      return { ok: false, status: res.status, error: body?.error ?? 'Request failed. Please try again.' };
     }
     return { ok: true, data: body as T };
   } catch {

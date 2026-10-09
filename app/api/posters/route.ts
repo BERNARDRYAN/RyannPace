@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     return errorResponse(500, 'Could not save to your gallery.');
   }
   if ((count ?? 0) >= MAX_POSTERS_PER_USER) {
-    return errorResponse(409, `Your gallery is full (${MAX_POSTERS_PER_USER} posters). Delete a few to save more.`);
+    return errorResponse(409, 'Your gallery is full. Delete a few posters to save more.');
   }
 
   const id = crypto.randomUUID();

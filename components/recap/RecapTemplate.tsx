@@ -4,12 +4,14 @@ import type { RecapRun } from '@/lib/recap';
 import type { RecapConfig } from '@/store/useRecapStore';
 import { POSTER_DIMENSIONS, buildRoute } from '@/lib/poster-presets';
 import { MONO, SANS, SERIF } from '@/lib/poster-helpers';
-import { bestGrid, formatHoursMinutes, summarizeRuns } from '@/lib/recap';
+import { bestGrid, formatHoursMinutes, periodLabel, summarizeRuns } from '@/lib/recap';
 import { trimRouteEnds } from '@/lib/privacy';
-import { formatPace, formatPosterDate } from '@/lib/format';
+import { formatPace } from '@/lib/format';
 import { KM_PER_MILE, displayDistance, displayElevation, distanceLabel, elevationLabel } from '@/lib/units';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
 import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
+import { useLocaleStore, useT } from '@/store/useLocaleStore';
+import { formatDateLong } from '@/lib/i18n';
 
 interface Tokens {
   pad: number;
@@ -39,6 +41,10 @@ interface RecapTemplateProps {
  * of every route (small multiples), longest run in the accent color.
  */
 export function RecapTemplate({ runs, config }: RecapTemplateProps) {
+  const tx = useT();
+  const locale = useLocaleStore((s) => s.locale);
+  // Typed titles win; otherwise the period follows the runs and the language.
+  const displayTitle = config.titleEdited ? config.title : periodLabel(runs, locale);
   const { palette, aspectRatio, units } = config;
   const t = TOKENS[aspectRatio];
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
@@ -66,15 +72,15 @@ export function RecapTemplate({ runs, config }: RecapTemplateProps) {
   };
 
   const stats = [
-    { label: 'Runs', value: String(totals.runs) },
-    { label: 'Time', value: formatHoursMinutes(totals.movingSeconds) },
+    { label: tx('Runs'), value: String(totals.runs) },
+    { label: tx('Time'), value: formatHoursMinutes(totals.movingSeconds) },
     {
-      label: 'Climb',
+      label: tx('Climb'),
       value: Math.round(displayElevation(totals.elevationGainMeters, units)).toLocaleString('en-US'),
       unit: elevationLabel(units),
     },
     {
-      label: 'Avg pace',
+      label: tx('Avg pace'),
       value: formatPace(Math.floor(paceSeconds / 60), paceSeconds % 60),
       unit: `/${unit}`,
     },
@@ -105,9 +111,9 @@ export function RecapTemplate({ runs, config }: RecapTemplateProps) {
       >
         <header style={{ flexShrink: 0 }}>
           <div style={{ ...label, display: 'flex', justifyContent: 'space-between', color: palette.primaryText }}>
-            <span style={{ fontWeight: 600 }}>RyannPace Recap</span>
+            <span style={{ fontWeight: 600 }}>{tx('RyannPace Recap')}</span>
             <span>
-              {totals.runs} {totals.runs === 1 ? 'run' : 'runs'}
+              {tx(totals.runs === 1 ? '{n} run' : '{n} runs', { n: totals.runs })}
             </span>
           </div>
           <div style={{ height: 3, background: palette.primaryText, marginTop: t.label }} />
@@ -126,12 +132,12 @@ export function RecapTemplate({ runs, config }: RecapTemplateProps) {
               paddingBottom: t.title * 0.06,
             }}
           >
-            {config.title || 'My Runs'}
+            {displayTitle}
           </h1>
         </header>
 
         <section style={{ flexShrink: 0, marginTop: t.gap * 0.6 }}>
-          <div style={label}>Total distance</div>
+          <div style={label}>{tx('Total distance')}</div>
           <div
             style={{
               fontFamily: SANS,
@@ -202,6 +208,7 @@ export function RecapTemplate({ runs, config }: RecapTemplateProps) {
           height={Math.round(contentWidth * t.gridAspect)}
           marginTop={t.gap * 1.2}
           labelStyle={label}
+          title={tx('Every route')}
         />
 
         <footer
@@ -224,11 +231,11 @@ export function RecapTemplate({ runs, config }: RecapTemplateProps) {
             />
             {totals.longest && (
               <div style={{ ...label, fontSize: t.label - 2, maxWidth: contentWidth * 0.5 }}>
-                <span style={{ color: palette.accent }}>■</span> Longest ·{' '}
+                <span style={{ color: palette.accent }}>■</span> {tx('Longest')} ·{' '}
                 {displayDistance(totals.longest.distanceKm, units).toFixed(1)} {unit}
                 <br />
                 <span style={{ color: palette.primaryText }}>{totals.longest.name}</span>
-                {totals.longest.date && <> · {formatPosterDate(totals.longest.date)}</>}
+                {totals.longest.date && <> · {formatDateLong(totals.longest.date, locale)}</>}
               </div>
             )}
           </div>
@@ -257,6 +264,7 @@ function RouteGrid({
   height,
   marginTop,
   labelStyle,
+  title,
 }: {
   routes: GridRoute[];
   longestId: string | null;
@@ -266,6 +274,7 @@ function RouteGrid({
   height: number;
   marginTop: number;
   labelStyle: CSSProperties;
+  title: string;
 }) {
   const count = Math.max(routes.length, 1);
   // Fit with gaps accounted for: shrink the box by the gaps, then size cells.
@@ -279,7 +288,7 @@ function RouteGrid({
 
   return (
     <section style={{ flex: 1, minHeight: 0, marginTop, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ ...labelStyle, marginBottom: 14 }}>Every route</div>
+      <div style={{ ...labelStyle, marginBottom: 14 }}>{title}</div>
       <div
         style={{
           flex: 1,

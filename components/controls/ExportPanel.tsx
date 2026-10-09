@@ -17,6 +17,8 @@ import {
 } from '@/lib/export-engine';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/store/useLocaleStore';
+import { tr } from '@/store/useLocaleStore';
 
 type ExportState = 'idle' | 'rendering' | 'done' | 'error';
 
@@ -32,7 +34,7 @@ async function saveToGallery(png: Blob) {
   try {
     const thumbnail = await createThumbnail(png);
     const res = await useGalleryStore.getState().save(currentRecipe(), thumbnail);
-    if (!res.ok) showNotice({ kind: 'error', text: `Exported, but not saved to your gallery: ${res.error}` });
+    if (!res.ok) showNotice({ kind: 'error', text: tr('Exported, but not saved to your gallery: {reason}', { reason: tr(res.error) }) });
     else if (!res.data.skipped) showNotice({ kind: 'success', text: 'Exported and saved to your gallery.' });
   } catch {
     showNotice({ kind: 'error', text: 'Exported, but the gallery thumbnail could not be created.' });
@@ -60,6 +62,7 @@ export function ExportPanel({
   const shareSupported = useSyncExternalStore(noopSubscribe, canShareFiles, () => false);
   const accountStatus = useAccountStore((s) => s.status);
   const openSignIn = useAccountStore((s) => s.openSignIn);
+  const t = useT();
 
   const studioAspectRatio = usePosterStore((s) => s.config.aspectRatio);
   const title = usePosterStore((s) => s.metrics.activityTitle);
@@ -107,7 +110,7 @@ export function ExportPanel({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <div role="radiogroup" aria-label="Export resolution" className="flex rounded-full bg-white p-1 shadow-sm">
+        <div role="radiogroup" aria-label={t('Export resolution')} className="flex rounded-full bg-white p-1 shadow-sm">
           {([1, 2] as const).map((ratio) => (
             <button
               key={ratio}
@@ -127,21 +130,21 @@ export function ExportPanel({
 
         <Button onClick={() => run('download')} disabled={busy} className="min-w-[150px]">
           {busy ? <LoaderCircle className="animate-spin" /> : state === 'done' ? <Check /> : <Download />}
-          {busy ? 'Rendering…' : 'Export PNG'}
+          {busy ? t('Rendering…') : t('Export PNG')}
         </Button>
 
         {shareSupported && (
           <Button variant="secondary" onClick={() => run('share')} disabled={busy}>
-            <Share2 /> Share
+            <Share2 /> {t('Share')}
           </Button>
         )}
       </div>
 
       {saveToGalleryOnExport && accountStatus === 'signed-in' && !message && (
         <p className="text-center text-[11px] text-muted">
-          Exports are saved to your{' '}
+          {t('Exports are saved to your')}{' '}
           <Link href="/gallery" className="underline underline-offset-2 hover:text-ink">
-            gallery
+            {t('gallery')}
           </Link>
           .
         </p>
@@ -149,9 +152,9 @@ export function ExportPanel({
       {saveToGalleryOnExport && accountStatus === 'signed-out' && !message && (
         <p className="text-center text-[11px] text-muted">
           <button type="button" onClick={openSignIn} className="underline underline-offset-2 hover:text-ink">
-            Sign in
+            {t('Sign in')}
           </button>{' '}
-          to keep a gallery of every poster you export.
+          {t('to keep a gallery of every poster you export.')}
         </p>
       )}
       {message && (
@@ -163,7 +166,7 @@ export function ExportPanel({
           )}
         >
           {state === 'error' && <CircleAlert className="size-3.5" />}
-          {message}
+          {t(message)}
         </p>
       )}
     </div>

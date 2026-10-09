@@ -5,6 +5,7 @@ import type { AspectRatio, ColorPalette, DistanceUnit } from '@/types/poster';
 import { parseActivityFile, SUPPORTED_EXTENSIONS } from '@/lib/activity-parsers';
 import { MAX_RECAP_RUNS, periodLabel, sampleRecapRuns, toRecapRun, type RecapRun } from '@/lib/recap';
 import { MAGAZINE_PALETTES, contrastModeFor } from '@/lib/poster-presets';
+import { tr } from '@/store/useLocaleStore';
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
@@ -59,22 +60,22 @@ export const useRecapStore = create<RecapState>()((set, get) => ({
     for (const file of files.slice(0, Math.max(0, room))) {
       const lower = file.name.toLowerCase();
       if (!SUPPORTED_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
-        errors.push(`${file.name}: not a GPX, FIT or TCX file.`);
+        errors.push(tr('{file}: not a GPX, FIT or TCX file.', { file: file.name }));
         continue;
       }
       if (file.size > MAX_FILE_BYTES) {
-        errors.push(`${file.name}: larger than 25 MB.`);
+        errors.push(tr('{file}: larger than 25 MB.', { file: file.name }));
         continue;
       }
       try {
         const run = toRecapRun(await parseActivityFile(file), file.name.replace(/\.[^.]+$/, ''));
         if (run) added.push(run);
-        else errors.push(`${file.name}: no GPS track (indoor activity?).`);
+        else errors.push(tr('{file}: no GPS track (indoor activity?).', { file: file.name }));
       } catch (error) {
-        errors.push(`${file.name}: ${error instanceof Error ? error.message : 'could not be read.'}`);
+        errors.push(`${file.name}: ${tr(error instanceof Error ? error.message : 'could not be read.')}`);
       }
     }
-    if (files.length > room) errors.push(`Only ${MAX_RECAP_RUNS} runs fit on one recap; extra files were skipped.`);
+    if (files.length > room) errors.push(tr('Only {max} runs fit on one recap; extra files were skipped.', { max: MAX_RECAP_RUNS }));
 
     const runs = [...get().runs, ...added].sort(byDate);
     const { config } = get();

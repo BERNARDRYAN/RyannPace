@@ -4,6 +4,7 @@ import { usePosterStore } from '@/store/usePosterStore';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { cn } from '@/lib/utils';
 import type { AspectRatio } from '@/types/poster';
+import { useT } from '@/store/useLocaleStore';
 
 const RATIOS: { id: AspectRatio; label: string; hint: string }[] = [
   { id: '9:16', label: '9:16', hint: 'Story' },
@@ -14,9 +15,10 @@ const RATIOS: { id: AspectRatio; label: string; hint: string }[] = [
 export function AspectRatioPicker() {
   const aspectRatio = usePosterStore((s) => s.config.aspectRatio);
   const setAspectRatio = usePosterStore((s) => s.setAspectRatio);
+  const t = useT();
 
   return (
-    <div role="radiogroup" aria-label="Aspect ratio" className="grid grid-cols-3 gap-1 rounded-xl bg-studio p-1">
+    <div role="radiogroup" aria-label={t('Aspect ratio')} className="grid grid-cols-3 gap-1 rounded-xl bg-studio p-1">
       {RATIOS.map((ratio) => {
         const active = ratio.id === aspectRatio;
         const { width, height } = POSTER_DIMENSIONS[ratio.id];
@@ -39,7 +41,7 @@ export function AspectRatioPicker() {
             />
             <span className="text-left leading-tight">
               <span className="block font-semibold">{ratio.label}</span>
-              <span className="block text-[10px] opacity-80">{ratio.hint}</span>
+              <span className="block text-[10px] opacity-80">{t(ratio.hint)}</span>
             </span>
           </button>
         );

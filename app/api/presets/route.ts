@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     return errorResponse(500, 'Could not save preset.');
   }
   if ((count ?? 0) >= MAX_PRESETS_PER_USER) {
-    return errorResponse(409, `You can keep up to ${MAX_PRESETS_PER_USER} presets. Delete one first.`);
+    return errorResponse(409, 'You have reached the preset limit. Delete one first.');
   }
 
   const { data, error } = await auth.supabase

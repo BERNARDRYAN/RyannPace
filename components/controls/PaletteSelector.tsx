@@ -4,11 +4,13 @@ import { Check } from 'lucide-react';
 import { usePosterStore } from '@/store/usePosterStore';
 import { TEMPLATE_PALETTES } from '@/lib/poster-presets';
 import { cn } from '@/lib/utils';
+import { useT } from '@/store/useLocaleStore';
 
 export function PaletteSelector() {
   const activeId = usePosterStore((s) => s.config.palette.id);
   const templateId = usePosterStore((s) => s.config.templateId);
   const setPalette = usePosterStore((s) => s.setPalette);
+  const t = useT();
 
   return (
     <div className="flex flex-wrap gap-3">
@@ -39,7 +41,7 @@ export function PaletteSelector() {
                 {active ? <Check className="size-4" strokeWidth={3} /> : 'Aa'}
               </span>
             </span>
-            <span className={cn('text-[11px]', active ? 'text-ink' : 'text-muted')}>{palette.name}</span>
+            <span className={cn('text-[11px]', active ? 'text-ink' : 'text-muted')}>{t(palette.name)}</span>
           </button>
         );
       })}

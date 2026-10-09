@@ -1,9 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { buttonVariants } from '@/components/ui/button';
+import { useT } from '@/store/useLocaleStore';
 
 export default function NotFound() {
+  const t = useT();
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
@@ -23,17 +27,17 @@ export default function NotFound() {
             <circle cx="222" cy="28" r="9" fill="#E4572E" opacity=".25" />
             <circle cx="222" cy="28" r="5" fill="#E4572E" />
           </svg>
-          <p className="font-mono text-[11px] tracking-[0.24em] text-muted uppercase">Error 404 · Signal lost</p>
+          <p className="font-mono text-[11px] tracking-[0.24em] text-muted uppercase">{t('Error 404 · Signal lost')}</p>
           <h1 className="mt-3 font-serif text-5xl leading-tight text-ink sm:text-6xl">
-            You&apos;re <span className="italic">off route.</span>
+            {t("You're")} <span className="italic">{t('off route.')}</span>
           </h1>
-          <p className="mt-4 text-ink-soft">This page doesn&apos;t exist. Let&apos;s get you back on course.</p>
+          <p className="mt-4 text-ink-soft">{t("This page doesn't exist. Let's get you back on course.")}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/studio" className={buttonVariants()}>
-              Open the studio <ArrowRight />
+              {t('Open the studio')} <ArrowRight />
             </Link>
             <Link href="/" className={buttonVariants({ variant: 'secondary' })}>
-              Home
+              {t('Home')}
             </Link>
           </div>
         </div>

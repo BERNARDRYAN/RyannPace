@@ -6,6 +6,7 @@ import { useAccountStore } from '@/store/useAccountStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/store/useLocaleStore';
 
 type Step = { kind: 'form'; error?: string } | { kind: 'sending' } | { kind: 'sent'; email: string };
 
@@ -17,6 +18,7 @@ export function SignInDialog() {
 
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<Step>({ kind: 'form' });
+  const t = useT();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -54,7 +56,7 @@ export function SignInDialog() {
         <button
           type="button"
           onClick={close}
-          aria-label="Close"
+          aria-label={t('Close')}
           className="absolute top-4 right-4 rounded-full p-1 text-muted hover:bg-black/5 hover:text-ink"
         >
           <X className="size-4" />
@@ -66,26 +68,26 @@ export function SignInDialog() {
               <MailCheck className="size-6" />
             </span>
             <h2 id="sign-in-title" className="font-serif text-2xl italic">
-              Check your inbox
+              {t('Check your inbox')}
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
-              We sent a sign-in link to <span className="font-medium text-ink">{step.email}</span>. Open it in{' '}
-              <strong>this browser</strong> to continue.
+              {t('We sent a sign-in link to')} <span className="font-medium text-ink">{step.email}</span>.{' '}
+              {t('Open it in this browser to continue.')}
             </p>
-            <p className="mt-3 text-xs text-muted">No email after a minute? Check spam, or try again.</p>
+            <p className="mt-3 text-xs text-muted">{t('No email after a minute? Check spam, or try again.')}</p>
             <Button variant="secondary" size="sm" className="mt-5" onClick={() => setStep({ kind: 'form' })}>
-              Use a different email
+              {t('Use a different email')}
             </Button>
           </div>
         ) : (
           <form onSubmit={onSubmit} noValidate>
             <h2 id="sign-in-title" className="font-serif text-2xl italic">
-              Sign in to RyannPace
+              {t('Sign in to RyannPace')}
             </h2>
             <p className="mt-1.5 mb-5 text-sm text-ink-soft">
-              Save your poster styles and reuse them on every run. No password needed: we&apos;ll email you a link.
+              {t("Save your poster styles and reuse them on every run. No password needed: we'll email you a link.")}
             </p>
-            <Label htmlFor="sign-in-email">Email</Label>
+            <Label htmlFor="sign-in-email">{t('Email')}</Label>
             <Input
               id="sign-in-email"
               type="email"
@@ -99,12 +101,12 @@ export function SignInDialog() {
             />
             {step.kind === 'form' && step.error && (
               <p id="sign-in-error" role="alert" className="mt-2 text-xs text-brand">
-                {step.error}
+                {t(step.error)}
               </p>
             )}
             <Button type="submit" className="mt-4 w-full" disabled={step.kind === 'sending' || !email.trim()}>
               {step.kind === 'sending' ? <LoaderCircle className="animate-spin" /> : <Mail />}
-              {step.kind === 'sending' ? 'Sending link…' : 'Email me a sign-in link'}
+              {step.kind === 'sending' ? t('Sending link…') : t('Email me a sign-in link')}
             </Button>
           </form>
         )}

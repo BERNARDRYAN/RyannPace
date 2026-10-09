@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { AspectRatio } from '@/types/poster';
 import type { PosterData } from '@/components/canvas/PosterRenderer';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
-import { formatPosterDate, formatPosterTime } from '@/lib/format';
+import { formatPosterTime } from '@/lib/format';
 import { MONO, SANS, buildMetricCells, dayOfYear, serialFor, withAlpha } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
 import { displayDistance, displayElevation, distanceLabel, elevationLabel, paceParts } from '@/lib/units';
@@ -12,6 +12,8 @@ import { SplitsChart } from '@/components/canvas/SplitsChart';
 import { splitsFor } from '@/lib/splits';
 import { Barcode } from '@/components/canvas/Barcode';
 import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
+import { useLocaleStore, useT } from '@/store/useLocaleStore';
+import { formatDateLong } from '@/lib/i18n';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -108,6 +110,8 @@ function CornerBrackets({ color, size, weight }: { color: string; size: number; 
  * HUD brackets and gauges. Native 1080 px wide like every template.
  */
 export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: PosterData) {
+  const tx = useT();
+  const locale = useLocaleStore((s) => s.locale);
   const { palette, aspectRatio } = config;
   const t = TOKENS[aspectRatio];
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
@@ -124,7 +128,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
   const unit = distanceLabel(config.units);
   const start = rawPoints[0];
   const serial = serialFor(metrics);
-  const dateLabel = formatPosterDate(metrics.date);
+  const dateLabel = formatDateLong(metrics.date, locale);
   const timeLabel = formatPosterTime(metrics.date);
   const splits = splitsFor(metrics, config.units);
   const showSplits = config.chart === 'splits' && splits.length >= 2;
@@ -162,7 +166,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
         }}
       >
         <span>
-          <span style={{ color: accent }}>◢ </span>RyannPace <span style={{ color: dim }}>{'//'}</span> Telemetry
+          <span style={{ color: accent }}>◢ </span>RyannPace <span style={{ color: dim }}>{'//'}</span> {tx('Telemetry')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: t.hud * 0.5 }}>
           <span
@@ -192,7 +196,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
       />
       <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between', marginTop: t.hud * 0.5 }}>
         <span>
-          {start ? `LAT ${coordinate(start.lat, 'N', 'S')}  LON ${coordinate(start.lon, 'E', 'W')}` : 'NO FIX'}
+          {start ? `LAT ${coordinate(start.lat, 'N', 'S')}  LON ${coordinate(start.lon, 'E', 'W')}` : tx('NO FIX')}
         </span>
         <span>
           {dateLabel}
@@ -204,7 +208,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
 
   const titleBlock = (
     <section style={{ marginTop: t.gap, flexShrink: 0 }}>
-      <div style={{ ...hudText, color: dim, marginBottom: t.label * 0.6 }}>[ Mission ]</div>
+      <div style={{ ...hudText, color: dim, marginBottom: t.label * 0.6 }}>[ {tx('Mission')} ]</div>
       <h1
         style={{
           fontFamily: SANS,
@@ -223,11 +227,11 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
           paddingBottom: t.title * 0.06,
         }}
       >
-        {metrics.activityTitle || 'Untitled Run'}
+        {metrics.activityTitle || tx('Untitled Run')}
       </h1>
       {metrics.locationName && (
         <div style={{ ...hudText, color: neon, marginTop: t.label * 0.7, letterSpacing: '0.12em' }}>
-          &gt; Location: {metrics.locationName}
+          &gt; {tx('Location')}: {metrics.locationName}
           <span style={{ color: accent }}>_</span>
         </div>
       )}
@@ -296,14 +300,14 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
           <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             {showSplits ? (
               <>
-                <span>Splits/{unit}</span>
+                <span>{tx('Splits')}/{unit}</span>
                 <span style={{ color: accent }}>
                   ▲ {formatPace(Math.floor(Math.min(...splits) / 60), Math.min(...splits) % 60)}
                 </span>
               </>
             ) : (
               <>
-                <span>Alt.Profile</span>
+                <span>{tx('Alt.Profile')}</span>
                 {Number.isFinite(maxEle) && (
                   <span style={{ color: accent }}>
                     ▲ {Math.round(displayElevation(maxEle, config.units))} {elevationLabel(config.units)}
@@ -340,8 +344,8 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
   const paceBlock = (
     <section style={{ flexShrink: 0, marginTop: isSplit ? 0 : t.gap }}>
       <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ color: palette.primaryText }}>Avg.Pace</span>
-        <span>[min/{unit}]</span>
+        <span style={{ color: palette.primaryText }}>{tx('Avg.Pace')}</span>
+        <span>[{tx('min/{unit}', { unit })}]</span>
       </div>
       <div
         style={{
@@ -389,7 +393,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
           }}
         >
           <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between' }}>
-            <span>{SHORT_LABEL[cell.key]}</span>
+            <span>{tx(SHORT_LABEL[cell.key])}</span>
             <span style={{ color: neon }}>{String(Math.round(cell.ratio * 100)).padStart(2, '0')}%</span>
           </div>
           <div
@@ -459,7 +463,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
         </div>
         <div style={{ ...hudText, fontSize: t.label - 2, marginTop: t.label * 0.6 }}>
           ID <span style={{ color: palette.primaryText }}>{serial}</span>
-          {metrics.gearBrand && <> · GEAR {metrics.gearBrand}</>}
+          {metrics.gearBrand && <> · {tx('Gear')} {metrics.gearBrand}</>}
         </div>
       </div>
       {config.showWatermark && config.watermarkText.trim() && (

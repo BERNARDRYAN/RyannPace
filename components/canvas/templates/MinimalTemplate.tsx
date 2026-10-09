@@ -9,6 +9,7 @@ import { ElevationProfile } from '@/components/canvas/ElevationProfile';
 import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
 import { SplitsChart } from '@/components/canvas/SplitsChart';
 import { splitsFor } from '@/lib/splits';
+import { useT } from '@/store/useLocaleStore';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -88,6 +89,7 @@ function dottedDate(iso: string): string {
  * a vertical location tag and a small hanko-style seal. Native 1080 px wide.
  */
 export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: PosterData) {
+  const tx = useT();
   const { palette, aspectRatio } = config;
   const t = TOKENS[aspectRatio];
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
@@ -213,7 +215,7 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
           paddingBottom: t.title * 0.08,
         }}
       >
-        {metrics.activityTitle || 'Untitled Run'}
+        {metrics.activityTitle || tx('Untitled Run')}
       </h1>
       <div style={{ width: t.title * 0.7, height: 3, background: palette.accent, marginTop: t.label * 0.9 }} />
     </section>
@@ -221,7 +223,7 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
 
   const pace = (
     <section style={{ flexShrink: 0, marginTop: t.gap * 0.8 }}>
-      <div style={small}>Pace / {unit}</div>
+      <div style={small}>{tx('Pace / {unit}', { unit })}</div>
       <div
         style={{
           fontFamily: SANS,
@@ -259,7 +261,7 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
     >
       {cells.map((cell) => (
         <div key={cell.key} style={{ minWidth: 0 }}>
-          <div style={small}>{cell.label}</div>
+          <div style={small}>{tx(cell.label)}</div>
           <div
             style={{
               fontFamily: SANS,

@@ -6,12 +6,14 @@ import { ChevronDown, Images, LogIn, LogOut } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAccountStore } from '@/store/useAccountStore';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/store/useLocaleStore';
 
 export function AccountMenu() {
   const { status, user, openSignIn, signOut } = useAccountStore(
     useShallow((s) => ({ status: s.status, user: s.user, openSignIn: s.openSignIn, signOut: s.signOut }))
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,20 +36,20 @@ export function AccountMenu() {
 
   if (status === 'signed-out' || !user) {
     return (
-      <Button onClick={openSignIn} aria-label="Sign in" className="h-9 px-2.5 sm:px-4">
-        <LogIn /> <span className="hidden sm:inline">Sign in</span>
+      <Button onClick={openSignIn} aria-label={t('Sign in')} className="h-9 px-2.5 sm:px-4">
+        <LogIn /> <span className="hidden sm:inline">{t('Sign in')}</span>
       </Button>
     );
   }
 
-  const label = user.email ?? 'Account';
+  const label = user.email ?? t('Account');
   return (
     <div ref={menuRef} className="relative">
       <button
         type="button"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label="Account menu"
+        aria-label={t('Account menu')}
         onClick={() => setMenuOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-full py-1 pr-2 pl-1 text-xs text-ink-soft transition-colors hover:bg-black/5"
       >
@@ -59,7 +61,7 @@ export function AccountMenu() {
       {menuOpen && (
         <div role="menu" className="absolute right-0 z-40 mt-2 w-60 rounded-xl border border-line bg-panel p-1.5 shadow-xl">
           <div className="px-3 py-2">
-            <div className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">Signed in as</div>
+            <div className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">{t('Signed in as')}</div>
             <div className="truncate text-sm text-ink">{label}</div>
           </div>
           <div className="my-1 h-px bg-line" />
@@ -69,7 +71,7 @@ export function AccountMenu() {
             onClick={() => setMenuOpen(false)}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-black/5"
           >
-            <Images className="size-4" /> My gallery
+            <Images className="size-4" /> {t('My gallery')}
           </Link>
           <button
             type="button"
@@ -80,7 +82,7 @@ export function AccountMenu() {
             }}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-black/5"
           >
-            <LogOut className="size-4" /> Sign out
+            <LogOut className="size-4" /> {t('Sign out')}
           </button>
         </div>
       )}

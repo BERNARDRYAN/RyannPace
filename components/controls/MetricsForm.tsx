@@ -17,6 +17,7 @@ import {
 } from '@/lib/units';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useT } from '@/store/useLocaleStore';
 
 interface NumberFieldProps {
   id: string;
@@ -78,13 +79,14 @@ function NumberField({ id, label, value, onCommit, unit, step = 1, min = 0, max,
 
 function DurationField({ value, onCommit }: { value: number; onCommit: (seconds: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const t = useT();
   const shown = draft ?? formatDuration(value);
   const parsed = parseDuration(shown);
 
   return (
     <div>
       <Label htmlFor="metric-duration">
-        Moving time <span className="ml-1 normal-case tracking-normal">(h:mm:ss)</span>
+        {t('Moving time')} <span className="ml-1 normal-case tracking-normal">(h:mm:ss)</span>
       </Label>
       <Input
         id="metric-duration"
@@ -114,6 +116,7 @@ export function MetricsForm() {
     }))
   );
   const pace = paceParts(metrics, units);
+  const t = useT();
   const round = (n: number, digits: number) => Number(n.toFixed(digits));
 
   const onDateChange = (value: string) => {
@@ -130,8 +133,8 @@ export function MetricsForm() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">Units</span>
-        <div role="radiogroup" aria-label="Distance units" className="flex rounded-full bg-studio p-0.5">
+        <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">{t('Units')}</span>
+        <div role="radiogroup" aria-label={t('Units')} className="flex rounded-full bg-studio p-0.5">
           {(['km', 'mi'] as const).map((u) => (
             <button
               key={u}
@@ -144,36 +147,36 @@ export function MetricsForm() {
                 (units ?? 'km') === u ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
               )}
             >
-              {u === 'km' ? 'Kilometres' : 'Miles'}
+              {u === 'km' ? t('Kilometres') : t('Miles')}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <Label htmlFor="metric-title">Activity title</Label>
+        <Label htmlFor="metric-title">{t('Activity title')}</Label>
         <Input
           id="metric-title"
           value={metrics.activityTitle}
           maxLength={60}
           onChange={(e) => updateMetrics({ activityTitle: e.target.value })}
-          placeholder="Sunday Long Loop"
+          placeholder={t('Sunday Long Loop')}
         />
       </div>
 
       <div className="grid grid-cols-[1fr_auto] gap-3">
         <div>
-          <Label htmlFor="metric-location">Location</Label>
+          <Label htmlFor="metric-location">{t('Location')}</Label>
           <Input
             id="metric-location"
             value={metrics.locationName}
             maxLength={48}
             onChange={(e) => updateMetrics({ locationName: e.target.value })}
-            placeholder="City, Country"
+            placeholder={t('City, Country')}
           />
         </div>
         <div>
-          <Label htmlFor="metric-date">Date</Label>
+          <Label htmlFor="metric-date">{t('Date')}</Label>
           <Input
             id="metric-date"
             type="date"
@@ -188,7 +191,7 @@ export function MetricsForm() {
         <NumberField
           key={`distance-${units ?? 'km'}`}
           id="metric-distance"
-          label="Distance"
+          label={t('Distance')}
           unit={distanceLabel(units)}
           step={0.01}
           min={0}
@@ -200,7 +203,7 @@ export function MetricsForm() {
       </div>
 
       <div className="flex items-center justify-between rounded-lg bg-studio px-3 py-2.5">
-        <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">Avg pace · auto</span>
+        <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">{t('Avg pace · auto')}</span>
         <span className="font-mono text-sm font-semibold text-ink tabular-nums">
           {formatPace(pace.minutes, pace.seconds)}{' '}
           <span className="font-normal text-muted">/{distanceLabel(units)}</span>
@@ -211,7 +214,7 @@ export function MetricsForm() {
         <NumberField
           key={`elevation-${units ?? 'km'}`}
           id="metric-elevation"
-          label="Elev."
+          label={t('Elev.')}
           unit={elevationLabel(units)}
           max={units === 'mi' ? 65000 : 20000}
           value={Math.round(displayElevation(metrics.elevationGainMeters, units))}
@@ -219,7 +222,7 @@ export function MetricsForm() {
         />
         <NumberField
           id="metric-hr"
-          label="Avg HR"
+          label={t('Avg HR')}
           unit="bpm"
           min={30}
           max={250}
@@ -229,7 +232,7 @@ export function MetricsForm() {
         />
         <NumberField
           id="metric-kcal"
-          label="Energy"
+          label={t('Energy')}
           unit="kcal"
           max={20000}
           optional
@@ -239,7 +242,7 @@ export function MetricsForm() {
       </div>
 
       <div>
-        <Label htmlFor="metric-gear">Gear (optional)</Label>
+        <Label htmlFor="metric-gear">{t('Gear (optional)')}</Label>
         <Input
           id="metric-gear"
           value={metrics.gearBrand ?? ''}

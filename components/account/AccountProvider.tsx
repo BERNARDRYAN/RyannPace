@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useAccountStore } from '@/store/useAccountStore';
 import { useGalleryStore } from '@/store/useGalleryStore';
+import { useLocaleStore } from '@/store/useLocaleStore';
 import { SignInDialog } from '@/components/account/SignInDialog';
 import { Toast } from '@/components/Toast';
 
@@ -16,6 +17,8 @@ export function AccountProvider() {
   const status = useAccountStore((s) => s.status);
 
   useEffect(() => {
+    // Language first, so the session toast (if any) is already translated.
+    useLocaleStore.getState().init();
     void init();
   }, [init]);
 

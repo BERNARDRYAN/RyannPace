@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePosterStore } from '@/store/usePosterStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/store/useLocaleStore';
 
 export function FileUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +28,7 @@ export function FileUploader() {
     );
 
   const isLoading = status === 'loading';
+  const t = useT();
 
   const handleFiles = (files: FileList | null) => {
     const file = files?.[0];
@@ -57,7 +59,7 @@ export function FileUploader() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="Upload a GPX, FIT or TCX file"
+        aria-label={t('Upload a GPX, FIT or TCX file')}
         aria-busy={isLoading}
         onClick={() => !isLoading && inputRef.current?.click()}
         onKeyDown={(e) => {
@@ -88,10 +90,10 @@ export function FileUploader() {
           {isLoading ? <LoaderCircle className="size-5 animate-spin" /> : <Upload className="size-5" />}
         </span>
         <span className="text-sm font-medium text-ink">
-          {isLoading ? 'Reading activity…' : isDragging ? 'Drop to load route' : 'Drop a GPX, FIT or TCX file'}
+          {isLoading ? t('Reading activity…') : isDragging ? t('Drop to load route') : t('Drop a GPX, FIT or TCX file')}
         </span>
         <span className="text-xs text-muted">
-          Garmin, Strava, Coros, Apple Watch exports · read on your device, never uploaded
+          {t('Garmin, Strava, Coros, Apple Watch exports · read on your device, never uploaded')}
         </span>
         <input
           ref={inputRef}
@@ -109,8 +111,8 @@ export function FileUploader() {
       {error && (
         <div role="alert" className="flex items-start gap-2 rounded-lg bg-brand-soft px-3 py-2.5 text-xs text-ink">
           <CircleAlert className="mt-px size-4 shrink-0 text-brand" />
-          <span className="flex-1">{error}</span>
-          <button type="button" onClick={clearGpxError} aria-label="Dismiss error" className="text-muted hover:text-ink">
+          <span className="flex-1">{t(error)}</span>
+          <button type="button" onClick={clearGpxError} aria-label={t('Dismiss')} className="text-muted hover:text-ink">
             <X className="size-3.5" />
           </button>
         </div>
@@ -119,18 +121,18 @@ export function FileUploader() {
       <div className="flex items-center justify-between gap-3 text-xs">
         <span className="flex min-w-0 items-center gap-1.5 text-muted">
           {isSampleData ? (
-            <>Showing sample route · Marina Bay loop</>
+            <>{t('Showing sample route · Marina Bay loop')}</>
           ) : (
             <>
               <FileCheck className="size-3.5 shrink-0 text-ink" />
-              <span className="truncate text-ink">{fileName ?? 'Uploaded track'}</span>
-              <span className="shrink-0">· {pointCount.toLocaleString()} pts</span>
+              <span className="truncate text-ink">{fileName ?? t('Uploaded track')}</span>
+              <span className="shrink-0">· {t('{n} pts', { n: pointCount.toLocaleString() })}</span>
             </>
           )}
         </span>
         {!isSampleData && (
           <Button variant="ghost" size="sm" onClick={loadSample} className="-mr-2">
-            <RotateCcw /> Sample
+            <RotateCcw /> {t('Sample')}
           </Button>
         )}
       </div>

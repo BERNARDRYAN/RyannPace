@@ -2,6 +2,7 @@ import type { RawGpxPoint } from '@/types/poster';
 import type { ParsedActivity } from '@/lib/activity-parsers';
 import { computeTrackStats } from '@/lib/gpx-calculator';
 import { downsamplePoints } from '@/lib/coordinate-normalizer';
+import { formatMonthRange, formatMonthYear, translate, type Locale } from '@/lib/i18n';
 
 /** One activity in a recap; routes are thinned since each is drawn small. */
 export interface RecapRun {
@@ -57,23 +58,21 @@ export function summarizeRuns(runs: RecapRun[]): RecapTotals {
   };
 }
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-/** "October 2026", "2026", or "Mar – Oct 2026" depending on the runs' span. */
-export function periodLabel(runs: RecapRun[]): string {
+/** "October 2026", "2026", or "Mar – Oct 2026" (or the Chinese equivalents) depending on the runs' span. */
+export function periodLabel(runs: RecapRun[], locale: Locale = 'en'): string {
   const dates = runs
     .map((r) => (r.date ? new Date(r.date) : null))
     .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
     .sort((a, b) => a.getTime() - b.getTime());
-  if (dates.length === 0) return 'My Runs';
+  if (dates.length === 0) return translate(locale, 'My Runs');
   const first = dates[0];
   const last = dates[dates.length - 1];
   if (first.getFullYear() === last.getFullYear() && first.getMonth() === last.getMonth()) {
-    return `${MONTHS[first.getMonth()]} ${first.getFullYear()}`;
+    return formatMonthYear(first.getFullYear(), first.getMonth(), locale);
   }
   if (first.getFullYear() === last.getFullYear()) {
     if (first.getMonth() === 0 && last.getMonth() === 11) return String(first.getFullYear());
-    return `${MONTHS[first.getMonth()].slice(0, 3)} – ${MONTHS[last.getMonth()].slice(0, 3)} ${first.getFullYear()}`;
+    return formatMonthRange(first.getFullYear(), first.getMonth(), last.getMonth(), locale);
   }
   return `${first.getFullYear()} – ${last.getFullYear()}`;
 }

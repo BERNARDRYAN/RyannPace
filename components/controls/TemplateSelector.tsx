@@ -5,6 +5,7 @@ import { usePosterStore } from '@/store/usePosterStore';
 import { TEMPLATES } from '@/lib/poster-presets';
 import { cn } from '@/lib/utils';
 import type { TemplateId } from '@/types/poster';
+import { useT } from '@/store/useLocaleStore';
 
 /** Miniature layout sketches so each card reads at a glance. */
 function TemplateGlyph({ id }: { id: TemplateId }) {
@@ -46,6 +47,7 @@ function TemplateGlyph({ id }: { id: TemplateId }) {
 export function TemplateSelector() {
   const templateId = usePosterStore((s) => s.config.templateId);
   const setTemplate = usePosterStore((s) => s.setTemplate);
+  const t = useT();
 
   return (
     <div className="grid grid-cols-3 gap-2.5">
@@ -72,12 +74,12 @@ export function TemplateSelector() {
               <TemplateGlyph id={tpl.id} />
               {!tpl.available && (
                 <span className="absolute inset-x-1 bottom-1 flex items-center justify-center gap-1 rounded bg-white/90 py-0.5 font-mono text-[9px] tracking-wider text-ink uppercase">
-                  <Lock className="size-2.5" /> Soon
+                  <Lock className="size-2.5" /> {t('Soon')}
                 </span>
               )}
             </div>
-            <div className="mt-1.5 text-xs font-medium text-ink">{tpl.name}</div>
-            <div className="text-[11px] text-muted">{tpl.tagline}</div>
+            <div className="mt-1.5 text-xs font-medium text-ink">{t(tpl.name)}</div>
+            <div className="text-[11px] text-muted">{t(tpl.tagline)}</div>
           </button>
         );
       })}

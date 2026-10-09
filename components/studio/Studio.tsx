@@ -19,6 +19,8 @@ import { DisplayOptions } from '@/components/controls/DisplayOptions';
 import { MetricsForm } from '@/components/controls/MetricsForm';
 import { ExportPanel } from '@/components/controls/ExportPanel';
 import { PresetsPanel } from '@/components/controls/PresetsPanel';
+import { useT } from '@/store/useLocaleStore';
+import { tr } from '@/store/useLocaleStore';
 
 /** Opens /studio?poster=<id> from the gallery, then strips the param from the URL. */
 function useOpenGalleryPoster() {
@@ -37,14 +39,14 @@ function useOpenGalleryPoster() {
       if (!res.ok) {
         showNotice({
           kind: 'error',
-          text: res.status === 401 ? 'Sign in to open posters from your gallery.' : res.error,
+          text: res.status === 401 ? 'Sign in to open posters from your gallery.' : tr(res.error),
         });
         return;
       }
       usePosterStore.getState().loadRecipe(res.data.recipe);
       // Re-exporting the reopened poster unchanged shouldn't add a duplicate.
       useGalleryStore.setState({ lastSavedRecipe: JSON.stringify(currentRecipe()) });
-      showNotice({ kind: 'success', text: `Opened “${res.data.title}” from your gallery.` });
+      showNotice({ kind: 'success', text: tr('Opened “{title}” from your gallery.', { title: res.data.title }) });
     })();
     return () => {
       cancelled = true;
@@ -57,15 +59,16 @@ function PreviewMeta() {
   const templateId = usePosterStore((s) => s.config.templateId);
   const paletteName = usePosterStore((s) => s.config.palette.name);
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
-  const templateName = TEMPLATES.find((t) => t.id === templateId)?.name ?? 'Editorial';
+  const t = useT();
+  const templateName = t(TEMPLATES.find((tpl) => tpl.id === templateId)?.name ?? 'Editorial');
   return (
     <div className="flex items-center justify-between gap-3 font-mono text-[10px] tracking-[0.18em] text-muted uppercase">
       <span className="flex shrink-0 items-center gap-2">
         <span className="size-1.5 animate-pulse rounded-full bg-brand" />
-        Live preview
+        {t('Live preview')}
       </span>
       <span className="truncate">
-        {templateName} · {paletteName} · {aspectRatio}
+        {templateName} · {t(paletteName)} · {aspectRatio}
         <span className="hidden sm:inline">
           {' '}
           · {width}×{height}
@@ -131,7 +134,7 @@ function DesktopStudio() {
           <StyleControls />
           <MetricControls />
         </aside>
-        <section aria-label="Poster preview" className="bg-dot-grid flex min-h-0 flex-1 flex-col gap-4 px-10 py-8">
+        <section className="bg-dot-grid flex min-h-0 flex-1 flex-col gap-4 px-10 py-8">
           <PreviewMeta />
           <div className="min-h-0 flex-1">
             <PosterBoard ref={posterRef} />
@@ -160,6 +163,7 @@ function MobileStudio() {
   const posterRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<MobileTab>('route');
   const [open, setOpen] = useState(false);
+  const t = useT();
 
   const selectTab = (next: MobileTab) => {
     if (open && next === tab) {
@@ -193,7 +197,7 @@ function MobileStudio() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            aria-label={open ? 'Collapse controls' : 'Expand controls'}
+            aria-label={open ? t('Collapse controls') : t('Expand controls')}
             aria-expanded={open}
             className="flex w-full justify-center pt-2.5 pb-1"
           >
@@ -214,7 +218,7 @@ function MobileStudio() {
                   )}
                 >
                   <Icon className="size-4.5" />
-                  {label}
+                  {t(label)}
                 </button>
               );
             })}

@@ -3,10 +3,12 @@
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { useAccountStore } from '@/store/useAccountStore';
 import { cn } from '@/lib/utils';
+import { useT } from '@/store/useLocaleStore';
 
 export function Toast() {
   const notice = useAccountStore((s) => s.notice);
   const dismiss = useAccountStore((s) => s.dismissNotice);
+  const t = useT();
 
   return (
     <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
@@ -23,8 +25,9 @@ export function Toast() {
           ) : (
             <CircleCheck className="size-4 shrink-0" />
           )}
-          <span>{notice.text}</span>
-          <button type="button" onClick={dismiss} aria-label="Dismiss" className="rounded-full p-1 hover:bg-white/15">
+          {/* Static messages translate here; dynamic ones are translated where they're created. */}
+          <span>{t(notice.text)}</span>
+          <button type="button" onClick={dismiss} aria-label={t('Dismiss')} className="rounded-full p-1 hover:bg-white/15">
             <X className="size-3.5" />
           </button>
         </div>

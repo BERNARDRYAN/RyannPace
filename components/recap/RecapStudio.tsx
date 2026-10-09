@@ -8,7 +8,7 @@ import { useRecapStore } from '@/store/useRecapStore';
 import { MAX_RECAP_RUNS, periodLabel } from '@/lib/recap';
 import { CYBERPUNK_PALETTES, MAGAZINE_PALETTES, MINIMAL_PALETTES, POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { displayDistance, distanceLabel } from '@/lib/units';
-import { formatPosterDate } from '@/lib/format';
+import { formatDateLong } from '@/lib/i18n';
 import { useHydrated } from '@/hooks/useHydrated';
 import { cn } from '@/lib/utils';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useLocaleStore, useT } from '@/store/useLocaleStore';
 
 const PALETTE_GROUPS = [
   { name: 'Editorial', palettes: MAGAZINE_PALETTES },
@@ -32,6 +33,7 @@ const RATIOS: AspectRatio[] = ['9:16', '4:5', '1:1'];
 function Dropzone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const t = useT();
   const { loading, addFiles, count } = useRecapStore(
     useShallow((s) => ({ loading: s.loading, addFiles: s.addFiles, count: s.runs.length }))
   );
@@ -46,7 +48,7 @@ function Dropzone() {
     <div
       role="button"
       tabIndex={0}
-      aria-label="Add activity files"
+      aria-label={t('Add activity files')}
       onClick={() => !loading && inputRef.current?.click()}
       onKeyDown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && !loading) {
@@ -69,10 +71,10 @@ function Dropzone() {
         {loading ? <LoaderCircle className="size-5 animate-spin" /> : <Layers className="size-5" />}
       </span>
       <span className="text-sm font-medium text-ink">
-        {loading ? 'Reading activities…' : 'Drop several GPX, FIT or TCX files'}
+        {loading ? t('Reading activities…') : t('Drop several GPX, FIT or TCX files')}
       </span>
       <span className="text-xs text-muted">
-        Up to {MAX_RECAP_RUNS} runs · {count} added · read on your device
+        {t('Up to {max} runs · {count} added · read on your device', { max: MAX_RECAP_RUNS, count })}
       </span>
       <input
         ref={inputRef}
@@ -92,6 +94,8 @@ function Dropzone() {
 
 function RunList() {
   const hydrated = useHydrated();
+  const t = useT();
+  const locale = useLocaleStore((s) => s.locale);
   const { runs, units, removeRun, clear, errors, dismissErrors } = useRecapStore(
     useShallow((s) => ({
       runs: s.runs,
@@ -113,7 +117,7 @@ function RunList() {
               <li key={e}>{e}</li>
             ))}
           </ul>
-          <button type="button" onClick={dismissErrors} aria-label="Dismiss errors" className="text-muted hover:text-ink">
+          <button type="button" onClick={dismissErrors} aria-label={t('Dismiss')} className="text-muted hover:text-ink">
             <X className="size-3.5" />
           </button>
         </div>
@@ -126,14 +130,14 @@ function RunList() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-ink">{run.name}</span>
                   <span className="block font-mono text-[10px] tracking-wider text-muted uppercase">
-                    {hydrated && run.date ? `${formatPosterDate(run.date)} · ` : ''}
+                    {hydrated && run.date ? `${formatDateLong(run.date, locale)} · ` : ''}
                     {displayDistance(run.distanceKm, units).toFixed(2)} {distanceLabel(units)}
                   </span>
                 </span>
                 <button
                   type="button"
                   onClick={() => removeRun(run.id)}
-                  aria-label={`Remove ${run.name}`}
+                  aria-label={t('Remove {name}', { name: run.name })}
                   className="rounded-full p-1.5 text-muted hover:bg-black/5 hover:text-brand"
                 >
                   <Trash className="size-3.5" />
@@ -142,7 +146,7 @@ function RunList() {
             ))}
           </ul>
           <Button variant="ghost" size="sm" onClick={clear} className="-ml-2">
-            <RotateCcw /> Clear all
+            <RotateCcw /> {t('Clear all')}
           </Button>
         </>
       )}
@@ -154,15 +158,17 @@ function StyleControls() {
   const { config, runs, updateConfig } = useRecapStore(
     useShallow((s) => ({ config: s.config, runs: s.runs, updateConfig: s.updateConfig }))
   );
+  const t = useT();
+  const locale = useLocaleStore((s) => s.locale);
 
   return (
     <div className="space-y-5">
       <div>
-        <Label htmlFor="recap-title">Title</Label>
+        <Label htmlFor="recap-title">{t('Title')}</Label>
         <div className="flex gap-2">
           <Input
             id="recap-title"
-            value={config.title}
+            value={config.titleEdited ? config.title : periodLabel(runs, locale)}
             maxLength={40}
             onChange={(e) => updateConfig({ title: e.target.value, titleEdited: true })}
           />
@@ -170,17 +176,17 @@ function StyleControls() {
             <Button
               variant="secondary"
               className="rounded-lg"
-              onClick={() => updateConfig({ title: periodLabel(runs), titleEdited: false })}
+              onClick={() => updateConfig({ title: periodLabel(runs, locale), titleEdited: false })}
             >
-              Auto
+              {t('Auto')}
             </Button>
           )}
         </div>
       </div>
 
       <div>
-        <Label>Format</Label>
-        <div role="radiogroup" aria-label="Format" className="grid grid-cols-3 gap-1 rounded-xl bg-studio p-1">
+        <Label>{t('Format')}</Label>
+        <div role="radiogroup" aria-label={t('Format')} className="grid grid-cols-3 gap-1 rounded-xl bg-studio p-1">
           {RATIOS.map((r) => (
             <button
               key={r}
@@ -200,11 +206,11 @@ function StyleControls() {
       </div>
 
       <div>
-        <Label>Palette</Label>
+        <Label>{t('Palette')}</Label>
         <div className="space-y-3">
           {PALETTE_GROUPS.map((group) => (
             <div key={group.name} className="flex items-center gap-2.5">
-              <span className="w-14 shrink-0 text-[11px] text-muted">{group.name}</span>
+              <span className="w-14 shrink-0 text-[11px] text-muted">{t(group.name)}</span>
               <div className="flex flex-wrap gap-2">
                 {group.palettes.map((p) => {
                   const active = p.id === config.palette.id;
@@ -233,8 +239,8 @@ function StyleControls() {
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-ink">Units</span>
-        <div role="radiogroup" aria-label="Units" className="flex rounded-full bg-studio p-0.5">
+        <span className="text-sm text-ink">{t('Units')}</span>
+        <div role="radiogroup" aria-label={t('Units')} className="flex rounded-full bg-studio p-0.5">
           {(['km', 'mi'] as const).map((u) => (
             <button
               key={u}
@@ -247,21 +253,21 @@ function StyleControls() {
                 config.units === u ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
               )}
             >
-              {u === 'km' ? 'Kilometres' : 'Miles'}
+              {u === 'km' ? t('Kilometres') : t('Miles')}
             </button>
           ))}
         </div>
       </div>
 
       <Switch
-        label="Privacy zone"
-        description="Hide the first & last 200 m of every route"
+        label={t('Privacy zone')}
+        description={t('Hide the first & last 200 m of every route')}
         checked={config.privacyZone}
         onCheckedChange={(privacyZone) => updateConfig({ privacyZone })}
       />
 
       <div>
-        <Label htmlFor="recap-watermark">Watermark</Label>
+        <Label htmlFor="recap-watermark">{t('Watermark')}</Label>
         <Input
           id="recap-watermark"
           value={config.watermarkText}
@@ -277,6 +283,7 @@ function RecapPreview({ posterRef }: { posterRef: React.RefObject<HTMLDivElement
   const { runs, config, loadSample } = useRecapStore(
     useShallow((s) => ({ runs: s.runs, config: s.config, loadSample: s.loadSample }))
   );
+  const t = useT();
   const { width, height } = POSTER_DIMENSIONS[config.aspectRatio];
 
   if (runs.length === 0) {
@@ -286,13 +293,13 @@ function RecapPreview({ posterRef }: { posterRef: React.RefObject<HTMLDivElement
           <Layers className="size-6" />
         </span>
         <div>
-          <p className="font-serif text-3xl text-ink italic">Your month, on one poster.</p>
+          <p className="font-serif text-3xl text-ink italic">{t('Your month, on one poster.')}</p>
           <p className="mt-2 max-w-sm text-sm text-ink-soft">
-            Add several runs to see your total distance, time, climb and every route side by side.
+            {t('Add several runs to see your total distance, time, climb and every route side by side.')}
           </p>
         </div>
         <Button variant="secondary" onClick={loadSample}>
-          <Sparkles /> Try with sample runs
+          <Sparkles /> {t('Try with sample runs')}
         </Button>
       </div>
     );
@@ -327,7 +334,6 @@ export function RecapStudio() {
           </ControlSection>
         </aside>
         <section
-          aria-label="Recap preview"
           className="bg-dot-grid order-1 flex flex-col gap-4 px-4 py-5 lg:order-2 lg:min-h-0 lg:flex-1 lg:px-10 lg:py-8"
         >
           <div className="h-[62vh] min-h-[360px] lg:h-auto lg:min-h-0 lg:flex-1">
