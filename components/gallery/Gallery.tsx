@@ -7,6 +7,7 @@ import type { GalleryPoster } from '@/types/gallery';
 import { useAccountStore } from '@/store/useAccountStore';
 import { useGalleryStore } from '@/store/useGalleryStore';
 import { formatPace, formatPosterDate } from '@/lib/format';
+import { displayDistance, distanceLabel, paceParts } from '@/lib/units';
 import { useHydrated } from '@/hooks/useHydrated';
 import { cn } from '@/lib/utils';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -25,6 +26,8 @@ function PosterCard({ poster }: { poster: GalleryPoster }) {
   const [confirming, setConfirming] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const { metrics, palette } = poster;
+  const units = poster.units ?? 'km';
+  const pace = paceParts(metrics, units);
 
   const onDelete = async () => {
     setConfirming(false);
@@ -68,7 +71,8 @@ function PosterCard({ poster }: { poster: GalleryPoster }) {
           <h3 className="truncate text-sm font-medium text-ink">{poster.title}</h3>
           <p className="mt-0.5 font-mono text-[10px] tracking-wider text-muted uppercase">
             {hydrated && poster.activityDate ? `${formatPosterDate(poster.activityDate)} · ` : ''}
-            {metrics.distanceKm.toFixed(2)} km · {formatPace(metrics.paceMinutes, metrics.paceSeconds)}
+            {displayDistance(metrics.distanceKm, units).toFixed(2)} {distanceLabel(units)} ·{' '}
+            {formatPace(pace.minutes, pace.seconds)}/{distanceLabel(units)}
           </p>
         </div>
         {confirming ? (

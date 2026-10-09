@@ -1,6 +1,7 @@
 import type {
   AspectRatio,
   ColorPalette,
+  DistanceUnit,
   PosterConfig,
   RawGpxPoint,
   TemplateId,
@@ -30,6 +31,7 @@ export interface GalleryPoster {
   templateId: TemplateId;
   metrics: WorkoutMetrics;
   palette: ColorPalette | null;
+  units: DistanceUnit | null;
   thumbnailUrl: string | null;
 }
 

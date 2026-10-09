@@ -1,5 +1,6 @@
-import type { WorkoutMetrics } from '@/types/poster';
+import type { DistanceUnit, WorkoutMetrics } from '@/types/poster';
 import { formatDuration } from '@/lib/format';
+import { displayDistance, displayElevation, distanceLabel, elevationLabel } from '@/lib/units';
 
 /** Font stacks backed by next/font variables set on <html> (see app/layout.tsx). */
 export const MONO = 'var(--font-jetbrains-mono), ui-monospace, monospace';
@@ -21,13 +22,17 @@ export interface MetricCell {
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 /** The secondary stats every template shows: distance, time, elevation, then HR or energy. */
-export function buildMetricCells(metrics: WorkoutMetrics, showHeartRate: boolean): MetricCell[] {
+export function buildMetricCells(
+  metrics: WorkoutMetrics,
+  showHeartRate: boolean,
+  units?: DistanceUnit
+): MetricCell[] {
   const cells: MetricCell[] = [
     {
       key: 'distance',
       label: 'Distance',
-      value: metrics.distanceKm.toFixed(2),
-      unit: 'km',
+      value: displayDistance(metrics.distanceKm, units).toFixed(2),
+      unit: distanceLabel(units),
       weight: 1.1,
       ratio: clamp01(metrics.distanceKm / 42.195),
     },
@@ -41,8 +46,8 @@ export function buildMetricCells(metrics: WorkoutMetrics, showHeartRate: boolean
     {
       key: 'elevation',
       label: 'Elev. Gain',
-      value: String(Math.round(metrics.elevationGainMeters)),
-      unit: 'm',
+      value: String(Math.round(displayElevation(metrics.elevationGainMeters, units))),
+      unit: elevationLabel(units),
       weight: 0.9,
       ratio: clamp01(metrics.elevationGainMeters / 1000),
     },

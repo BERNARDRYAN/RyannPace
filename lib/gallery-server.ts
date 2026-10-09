@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AspectRatio, ColorPalette, TemplateId, WorkoutMetrics } from '@/types/poster';
+import type { AspectRatio, ColorPalette, DistanceUnit, TemplateId, WorkoutMetrics } from '@/types/poster';
 import type { GalleryPoster, GalleryPosterDetail, PosterRecipe } from '@/types/gallery';
 
 export const POSTERS_TABLE = 'ryannpace_posters';
@@ -9,7 +9,7 @@ export const THUMBNAIL_BUCKET = 'poster-thumbnails';
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 export const SUMMARY_COLUMNS =
-  'id, title, activity_date, aspect_ratio, template_id, thumbnail_path, created_at, metrics:recipe->metrics, palette:recipe->config->palette';
+  'id, title, activity_date, aspect_ratio, template_id, thumbnail_path, created_at, metrics:recipe->metrics, palette:recipe->config->palette, units:recipe->config->>units';
 export const DETAIL_COLUMNS =
   'id, title, activity_date, aspect_ratio, template_id, thumbnail_path, created_at, recipe';
 
@@ -23,9 +23,10 @@ export interface PosterSummaryRow {
   created_at: string;
   metrics: WorkoutMetrics;
   palette: ColorPalette | null;
+  units: DistanceUnit | null;
 }
 
-export interface PosterDetailRow extends Omit<PosterSummaryRow, 'metrics' | 'palette'> {
+export interface PosterDetailRow extends Omit<PosterSummaryRow, 'metrics' | 'palette' | 'units'> {
   recipe: PosterRecipe;
 }
 
@@ -60,6 +61,7 @@ export function toGalleryPoster(row: PosterSummaryRow, urls: Map<string, string>
     templateId: row.template_id,
     metrics: row.metrics,
     palette: row.palette,
+    units: row.units === 'mi' ? 'mi' : row.units === 'km' ? 'km' : null,
     thumbnailUrl: row.thumbnail_path ? urls.get(row.thumbnail_path) ?? null : null,
   };
 }
@@ -67,7 +69,12 @@ export function toGalleryPoster(row: PosterSummaryRow, urls: Map<string, string>
 export function toGalleryPosterDetail(row: PosterDetailRow, urls: Map<string, string>): GalleryPosterDetail {
   return {
     ...toGalleryPoster(
-      { ...row, metrics: row.recipe.metrics, palette: row.recipe.config.palette },
+      {
+        ...row,
+        metrics: row.recipe.metrics,
+        palette: row.recipe.config.palette,
+        units: row.recipe.config.units ?? null,
+      },
       urls
     ),
     recipe: row.recipe,

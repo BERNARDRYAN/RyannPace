@@ -9,6 +9,7 @@ import type {
 } from '@/types/poster';
 import { calculatePace, computeTrackStats, haversineMeters } from '@/lib/gpx-calculator';
 import { downsamplePoints, normalizeGpxCoordinates } from '@/lib/coordinate-normalizer';
+import { computeAllSplits } from '@/lib/splits';
 
 /** Native (1x) canvas size per ratio. Exports multiply this by the pixel ratio. */
 export const POSTER_DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
@@ -233,6 +234,10 @@ export const DEFAULT_CONFIG: PosterConfig = {
   customOverlayImage: null,
   overlayOpacity: 0.25,
   contrastMode: contrastModeFor(PALETTES[0]),
+  units: 'km',
+  privacyZone: true,
+  chart: 'elevation',
+  stamp: 'qr',
 };
 
 /**
@@ -281,6 +286,7 @@ export function metricsFromSample(points: RawGpxPoint[]): WorkoutMetrics {
     ...calculatePace(distanceKm, stats.movingSeconds),
     elevationGainMeters: stats.elevationGainMeters,
     heartRateAvg: 158,
+    ...computeAllSplits(points),
     date: stats.startTime ?? new Date().toISOString(),
     locationName: 'Marina Bay, Singapore',
     activityTitle: 'Sunday Long Loop',

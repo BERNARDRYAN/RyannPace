@@ -12,7 +12,7 @@ export function FileUploader() {
   const dragDepth = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  const { status, error, fileName, isSampleData, pointCount, loadGpxFile, loadSample, clearGpxError } =
+  const { status, error, fileName, isSampleData, pointCount, loadActivityFile, loadSample, clearGpxError } =
     usePosterStore(
       useShallow((s) => ({
         status: s.gpxStatus,
@@ -20,7 +20,7 @@ export function FileUploader() {
         fileName: s.gpxFileName,
         isSampleData: s.isSampleData,
         pointCount: s.rawPoints.length,
-        loadGpxFile: s.loadGpxFile,
+        loadActivityFile: s.loadActivityFile,
         loadSample: s.loadSample,
         clearGpxError: s.clearGpxError,
       }))
@@ -30,7 +30,7 @@ export function FileUploader() {
 
   const handleFiles = (files: FileList | null) => {
     const file = files?.[0];
-    if (file) void loadGpxFile(file);
+    if (file) void loadActivityFile(file);
   };
 
   const onDragEnter = (e: DragEvent) => {
@@ -57,7 +57,7 @@ export function FileUploader() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="Upload a GPX file"
+        aria-label="Upload a GPX, FIT or TCX file"
         aria-busy={isLoading}
         onClick={() => !isLoading && inputRef.current?.click()}
         onKeyDown={(e) => {
@@ -88,15 +88,15 @@ export function FileUploader() {
           {isLoading ? <LoaderCircle className="size-5 animate-spin" /> : <Upload className="size-5" />}
         </span>
         <span className="text-sm font-medium text-ink">
-          {isLoading ? 'Parsing track…' : isDragging ? 'Drop to load route' : 'Drop a .gpx file or click to browse'}
+          {isLoading ? 'Reading activity…' : isDragging ? 'Drop to load route' : 'Drop a GPX, FIT or TCX file'}
         </span>
         <span className="text-xs text-muted">
-          Garmin, Strava, Coros, Apple Watch exports · parsed on your device
+          Garmin, Strava, Coros, Apple Watch exports · read on your device, never uploaded
         </span>
         <input
           ref={inputRef}
           type="file"
-          accept=".gpx,application/gpx+xml"
+          accept=".gpx,.fit,.tcx,application/gpx+xml"
           className="sr-only"
           tabIndex={-1}
           onChange={(e) => {

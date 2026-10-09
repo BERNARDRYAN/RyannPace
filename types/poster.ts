@@ -2,6 +2,9 @@ export type AspectRatio = '9:16' | '1:1' | '4:5';
 
 export type TemplateId = 'magazine' | 'cyberpunk' | 'swiss';
 
+/** Display units. Metrics are always stored in metric; `mi` also shows elevation in feet. */
+export type DistanceUnit = 'km' | 'mi';
+
 export interface CoordinatePoint {
   x: number;
   y: number;
@@ -27,6 +30,9 @@ export interface WorkoutMetrics {
   locationName: string;
   activityTitle: string;
   gearBrand?: string; // e.g., "Nike Vaporfly 3"
+  /** Moving seconds per km / per mile, computed at import. Absent without timestamps. */
+  splitsKm?: number[];
+  splitsMi?: number[];
 }
 
 export interface ColorPalette {
@@ -52,6 +58,14 @@ export interface PosterConfig {
   customOverlayImage: string | null;
   overlayOpacity: number; // 0 to 1
   contrastMode: 'dark' | 'light';
+  /** Optional so presets and gallery posters saved before units existed stay valid. */
+  units?: DistanceUnit;
+  /** Hide the first/last 200 m of the drawn route. Optional for older saves; treated as on. */
+  privacyZone?: boolean;
+  /** What the profile chart shows. Optional for older saves; treated as elevation. */
+  chart?: 'elevation' | 'splits';
+  /** Footer stamp: a scannable QR code to RyannPace, or the decorative barcode. Optional; treated as QR. */
+  stamp?: 'qr' | 'barcode';
 }
 
 export interface UserPreset {

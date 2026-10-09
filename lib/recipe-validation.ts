@@ -21,6 +21,13 @@ function str(value: unknown, maxLength: number): string | null {
   return typeof value === 'string' && value.length <= maxLength ? value : null;
 }
 
+/** Optional list of split times (seconds); null means present but malformed. */
+function splitList(value: unknown): number[] | undefined | null {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length > 200) return null;
+  return value.every((n) => typeof n === 'number' && Number.isFinite(n) && n > 0 && n < 24 * 3600) ? value : null;
+}
+
 function sanitizeMetrics(value: unknown): WorkoutMetrics | null {
   if (!isRecord(value)) return null;
   const distanceKm = num(value.distanceKm, 0, 1000);
@@ -34,6 +41,8 @@ function sanitizeMetrics(value: unknown): WorkoutMetrics | null {
   const locationName = str(value.locationName, 64);
   const activityTitle = str(value.activityTitle, 80);
   const gearBrand = value.gearBrand === undefined ? undefined : str(value.gearBrand, 60);
+  const splitsKm = splitList(value.splitsKm);
+  const splitsMi = splitList(value.splitsMi);
 
   if (
     distanceKm === null ||
@@ -47,7 +56,9 @@ function sanitizeMetrics(value: unknown): WorkoutMetrics | null {
     Number.isNaN(Date.parse(date)) ||
     locationName === null ||
     activityTitle === null ||
-    gearBrand === null
+    gearBrand === null ||
+    splitsKm === null ||
+    splitsMi === null
   ) {
     return null;
   }
@@ -64,6 +75,8 @@ function sanitizeMetrics(value: unknown): WorkoutMetrics | null {
     locationName,
     activityTitle,
     ...(gearBrand ? { gearBrand } : {}),
+    ...(splitsKm ? { splitsKm } : {}),
+    ...(splitsMi ? { splitsMi } : {}),
   };
 }
 

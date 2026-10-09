@@ -5,8 +5,12 @@ import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { formatCoordinate, formatPosterDate, formatPosterTime } from '@/lib/format';
 import { MONO, SANS, SERIF, buildMetricCells, dayOfYear, serialFor } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
+import { displayDistance, distanceLabel, paceParts } from '@/lib/units';
 import { ElevationProfile } from '@/components/canvas/ElevationProfile';
+import { SplitsChart } from '@/components/canvas/SplitsChart';
+import { splitsFor } from '@/lib/splits';
 import { Barcode } from '@/components/canvas/Barcode';
+import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -87,12 +91,18 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
   const contentWidth = width - t.pad * 2;
   const isSplit = t.layout === 'split';
 
-  const cells = buildMetricCells(metrics, config.showHeartRate);
+  const cells = buildMetricCells(metrics, config.showHeartRate, config.units);
+  const pace = paceParts(metrics, config.units);
+  const unit = distanceLabel(config.units);
   const start = rawPoints[0];
   const serial = serialFor(metrics);
   const dateLabel = formatPosterDate(metrics.date);
   const timeLabel = formatPosterTime(metrics.date);
-  const hasElevation = config.showElevationProfile && rawPoints.some((p) => typeof p.ele === 'number');
+  const splits = splitsFor(metrics, config.units);
+  const showSplits = config.chart === 'splits' && splits.length >= 2;
+  // One chart slot: per-unit splits when chosen and available, otherwise elevation.
+  const hasElevation =
+    config.showElevationProfile && (showSplits || rawPoints.some((p) => typeof p.ele === 'number'));
 
   const monoLabel: CSSProperties = {
     fontFamily: MONO,
@@ -256,20 +266,30 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
               letterSpacing: '-0.03em',
             }}
           >
-            {metrics.distanceKm.toFixed(1)}
-            <span style={{ fontSize: t.title * 0.5, marginLeft: 12, color: palette.accent }}>km</span>
+            {displayDistance(metrics.distanceKm, config.units).toFixed(1)}
+            <span style={{ fontSize: t.title * 0.5, marginLeft: 12, color: palette.accent }}>{unit}</span>
           </div>
         )}
       </div>
 
       {hasElevation && (
         <div style={{ flexShrink: 0, margin: `0 -${platePadX}px`, lineHeight: 0 }}>
-          <ElevationProfile
-            points={rawPoints}
-            color={palette.primaryText}
-            width={routePlateWidth}
-            height={t.elevationHeight}
-          />
+          {showSplits ? (
+            <SplitsChart
+              splits={splits}
+              color={palette.primaryText}
+              highlight={palette.accent}
+              width={routePlateWidth}
+              height={t.elevationHeight}
+            />
+          ) : (
+            <ElevationProfile
+              points={rawPoints}
+              color={palette.primaryText}
+              width={routePlateWidth}
+              height={t.elevationHeight}
+            />
+          )}
         </div>
       )}
     </section>
@@ -279,7 +299,7 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
     <section style={{ flexShrink: 0, marginTop: isSplit ? 0 : t.sectionGap }}>
       <div style={{ ...monoLabel, display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: palette.primaryText, fontWeight: 600 }}>Average Pace</span>
-        <span>Min / Km</span>
+        <span>Min / {unit}</span>
       </div>
       <div
         style={{
@@ -295,9 +315,9 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
           whiteSpace: 'nowrap',
         }}
       >
-        {String(metrics.paceMinutes).padStart(2, '0')}
+        {String(pace.minutes).padStart(2, '0')}
         <span style={{ color: palette.accent }}>&rsquo;</span>
-        {String(metrics.paceSeconds).padStart(2, '0')}
+        {String(pace.seconds).padStart(2, '0')}
         <span style={{ color: palette.accent }}>&rdquo;</span>
       </div>
     </section>
@@ -376,12 +396,23 @@ export function MagazineTemplate({ metrics, config, rawPoints, routePoints }: Po
     >
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: t.label }}>
         <div style={{ lineHeight: 0 }}>
-          <Barcode
-            seed={`${serial}|${metrics.durationSeconds}|${metrics.activityTitle}`}
-            color={palette.primaryText}
-            width={t.barcode.width}
-            height={t.barcode.height}
-          />
+          {config.stamp === 'barcode' ? (
+            <Barcode
+              seed={`${serial}|${metrics.durationSeconds}|${metrics.activityTitle}`}
+              color={palette.primaryText}
+              width={t.barcode.width}
+              height={t.barcode.height}
+            />
+          ) : (
+            // Dark modules on a light tile so every scanner reads it, on any palette.
+            <QrStamp
+              value={posterQrUrl()}
+              size={Math.round(t.barcode.height * 1.55)}
+              foreground={config.contrastMode === 'dark' ? palette.background : palette.primaryText}
+              background={config.contrastMode === 'dark' ? palette.primaryText : palette.background}
+              radius={4}
+            />
+          )}
           <div
             style={{
               ...monoLabel,

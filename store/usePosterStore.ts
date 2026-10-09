@@ -12,8 +12,14 @@ import type {
 } from '@/types/poster';
 import type { PosterRecipe } from '@/types/gallery';
 import { downsamplePoints } from '@/lib/coordinate-normalizer';
-import { calculatePace, computeTrackStats, extractAverageHeartRate } from '@/lib/gpx-calculator';
-import { parseGpx } from '@/lib/gpx-parser';
+import { calculatePace, computeTrackStats } from '@/lib/gpx-calculator';
+import { computeAllSplits } from '@/lib/splits';
+import {
+  SUPPORTED_EXTENSIONS,
+  parseActivityFile,
+  parseGpxActivity,
+  type ParsedActivity,
+} from '@/lib/activity-parsers';
 import {
   DEFAULT_CONFIG,
   TEMPLATE_PALETTES,
@@ -48,8 +54,11 @@ interface PosterState {
   setAspectRatio: (aspectRatio: AspectRatio) => void;
   setPalette: (palette: ColorPalette) => void;
   setRoute: (rawPoints: RawGpxPoint[]) => void;
+  /** Applies an already-parsed activity (GPX, TCX or FIT) to the poster. */
+  loadActivity: (parsed: ParsedActivity, fileName?: string) => void;
   loadGpxString: (gpxContent: string, fileName?: string) => Promise<void>;
-  loadGpxFile: (file: File) => Promise<void>;
+  /** Reads a .gpx, .tcx or .fit file and loads it. */
+  loadActivityFile: (file: File) => Promise<void>;
   loadSample: () => void;
   clearGpxError: () => void;
   /** Restores a poster saved in the gallery. */
@@ -117,51 +126,51 @@ export const usePosterStore = create<PosterState>()((set, get) => ({
 
   setRoute: (rawPoints) => set(buildRoute(rawPoints)),
 
-  loadGpxString: async (gpxContent, fileName) => {
-    const loadId = ++latestLoadId;
-    set({ gpxStatus: 'loading', gpxError: null });
-
-    try {
-      const gpx = parseGpx(gpxContent);
-      const points = gpx.points;
-
-      if (points.length < 2) {
-        throw new Error('No GPS track found. Make sure the file contains <trkpt> or <rtept> points.');
-      }
-
-      const stats = computeTrackStats(points);
-      const heartRateAvg = extractAverageHeartRate(gpxContent);
-      const distanceKm = Number(stats.distanceKm.toFixed(2));
-      const title = gpx.name;
-      const metadataTime = gpx.time ? new Date(gpx.time) : null;
-
-      if (loadId !== latestLoadId) return;
-
-      const current = get().metrics;
+  loadActivity: (parsed, fileName) => {
+    latestLoadId++;
+    const { points } = parsed;
+    if (points.length < 2) {
       set({
-        ...buildRoute(points),
-        isSampleData: false,
-        gpxStatus: 'ready',
-        gpxError: null,
-        gpxFileName: fileName ?? null,
-        metrics: {
-          ...current,
-          distanceKm,
-          durationSeconds: stats.movingSeconds,
-          ...calculatePace(distanceKm, stats.movingSeconds),
-          elevationGainMeters: stats.elevationGainMeters,
-          heartRateAvg,
-          date:
-            stats.startTime ??
-            (metadataTime && !Number.isNaN(metadataTime.getTime())
-              ? metadataTime.toISOString()
-              : current.date),
-          activityTitle: title?.trim() || current.activityTitle,
-          locationName: current.locationName,
-        },
+        gpxStatus: 'error',
+        gpxError: 'No GPS track found in this file. Indoor or treadmill activities have no route to draw.',
       });
+      return;
+    }
+
+    const stats = computeTrackStats(points);
+    const summary = parsed.summary ?? {};
+    // Prefer the device's own totals (FIT/TCX) so posters match Garmin Connect / Strava.
+    const distanceKm = Number((summary.distanceKm ?? stats.distanceKm).toFixed(2));
+    const movingSeconds = summary.movingSeconds ?? stats.movingSeconds;
+    const startTime = stats.startTime ?? (parsed.time && !Number.isNaN(Date.parse(parsed.time)) ? new Date(parsed.time).toISOString() : null);
+
+    const current = get().metrics;
+    set({
+      ...buildRoute(points),
+      isSampleData: false,
+      gpxStatus: 'ready',
+      gpxError: null,
+      gpxFileName: fileName ?? null,
+      metrics: {
+        ...current,
+        distanceKm,
+        durationSeconds: movingSeconds,
+        ...calculatePace(distanceKm, movingSeconds),
+        elevationGainMeters: summary.elevationGainMeters ?? stats.elevationGainMeters,
+        heartRateAvg: parsed.heartRateAvg,
+        caloriesBurned: parsed.calories ?? current.caloriesBurned,
+        ...computeAllSplits(points),
+        date: startTime ?? current.date,
+        activityTitle: parsed.name?.trim() || current.activityTitle,
+        locationName: current.locationName,
+      },
+    });
+  },
+
+  loadGpxString: async (gpxContent, fileName) => {
+    try {
+      get().loadActivity(parseGpxActivity(gpxContent), fileName);
     } catch (error) {
-      if (loadId !== latestLoadId) return;
       set({
         gpxStatus: 'error',
         gpxError: error instanceof Error ? error.message : 'Could not read this GPX file.',
@@ -169,23 +178,30 @@ export const usePosterStore = create<PosterState>()((set, get) => ({
     }
   },
 
-  loadGpxFile: async (file) => {
-    if (!/\.gpx$/i.test(file.name)) {
-      set({ gpxStatus: 'error', gpxError: 'Please choose a .gpx file.' });
+  loadActivityFile: async (file) => {
+    const lower = file.name.toLowerCase();
+    if (!SUPPORTED_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+      set({ gpxStatus: 'error', gpxError: 'Please choose a .gpx, .fit or .tcx file.' });
       return;
     }
     if (file.size > MAX_GPX_FILE_BYTES) {
-      set({ gpxStatus: 'error', gpxError: 'GPX file is larger than 25 MB.' });
+      set({ gpxStatus: 'error', gpxError: 'Activity file is larger than 25 MB.' });
       return;
     }
-    let content: string;
+    const loadId = ++latestLoadId;
+    set({ gpxStatus: 'loading', gpxError: null });
     try {
-      content = await file.text();
-    } catch {
-      set({ gpxStatus: 'error', gpxError: 'The file could not be read.' });
-      return;
+      const parsed = await parseActivityFile(file);
+      // A newer upload started while this one was parsing; drop the stale result.
+      if (loadId !== latestLoadId) return;
+      get().loadActivity(parsed, file.name);
+    } catch (error) {
+      if (loadId !== latestLoadId) return;
+      set({
+        gpxStatus: 'error',
+        gpxError: error instanceof Error ? error.message : 'Could not read this file.',
+      });
     }
-    await get().loadGpxString(content, file.name);
   },
 
   loadSample: () => {

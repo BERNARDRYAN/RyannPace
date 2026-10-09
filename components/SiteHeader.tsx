@@ -8,6 +8,7 @@ import { LogoMark, Wordmark } from '@/components/brand/Logo';
 
 const LINKS = [
   { href: '/studio', label: 'Studio' },
+  { href: '/recap', label: 'Recap' },
   { href: '/gallery', label: 'Gallery' },
 ];
 
@@ -31,7 +32,7 @@ export function SiteHeader() {
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-4 sm:py-2',
+                  'rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-4 sm:py-2',
                   active ? 'bg-ink text-white' : 'text-ink-soft hover:bg-black/5 hover:text-ink'
                 )}
               >

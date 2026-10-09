@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useSyncExternalStore, type RefObject } from 'react';
+import type { AspectRatio } from '@/types/poster';
 import { Check, CircleAlert, Download, LoaderCircle, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { currentRecipe, usePosterStore } from '@/store/usePosterStore';
@@ -40,9 +41,19 @@ async function saveToGallery(png: Blob) {
 
 interface ExportPanelProps {
   posterRef: RefObject<HTMLDivElement | null>;
+  /** Overrides for non-studio posters (the recap); default to the studio poster. */
+  filename?: string;
+  aspectRatio?: AspectRatio;
+  /** Studio exports are filed in the gallery; recaps are not single-run recipes. */
+  saveToGalleryOnExport?: boolean;
 }
 
-export function ExportPanel({ posterRef }: ExportPanelProps) {
+export function ExportPanel({
+  posterRef,
+  filename: filenameOverride,
+  aspectRatio: aspectRatioOverride,
+  saveToGalleryOnExport = true,
+}: ExportPanelProps) {
   const [pixelRatio, setPixelRatio] = useState<ExportPixelRatio>(2);
   const [state, setState] = useState<ExportState>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -50,10 +61,14 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
   const accountStatus = useAccountStore((s) => s.status);
   const openSignIn = useAccountStore((s) => s.openSignIn);
 
-  const aspectRatio = usePosterStore((s) => s.config.aspectRatio);
+  const studioAspectRatio = usePosterStore((s) => s.config.aspectRatio);
   const title = usePosterStore((s) => s.metrics.activityTitle);
+  const aspectRatio = aspectRatioOverride ?? studioAspectRatio;
   const { width, height } = POSTER_DIMENSIONS[aspectRatio];
-  const filename = `ryannpace-${title || 'workout'}-${aspectRatio.replace(':', 'x')}`;
+  const filename = filenameOverride ?? `ryannpace-${title || 'workout'}-${aspectRatio.replace(':', 'x')}`;
+  const archive = (blob: Blob) => {
+    if (saveToGalleryOnExport) void saveToGallery(blob);
+  };
   const busy = state === 'rendering';
 
   const run = async (action: 'download' | 'share') => {
@@ -66,7 +81,7 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
         try {
           const { shared, blob } = await sharePoster(node, { filename, pixelRatio });
           setState(shared ? 'done' : 'idle');
-          if (shared) void saveToGallery(blob);
+          if (shared) archive(blob);
           return;
         } catch (error) {
           // Safari drops the user-gesture window during a long render; fall back to a download.
@@ -74,7 +89,7 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
             const blob = await exportPosterAsPng(node, { filename, pixelRatio });
             setMessage('Sharing was blocked by the browser, so the PNG was downloaded instead.');
             setState('done');
-            void saveToGallery(blob);
+            archive(blob);
             return;
           }
           throw error;
@@ -82,7 +97,7 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
       }
       const blob = await exportPosterAsPng(node, { filename, pixelRatio });
       setState('done');
-      void saveToGallery(blob);
+      archive(blob);
     } catch {
       setState('error');
       setMessage('Export failed. Try 1x resolution or a smaller background photo.');
@@ -122,7 +137,7 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
         )}
       </div>
 
-      {accountStatus === 'signed-in' && !message && (
+      {saveToGalleryOnExport && accountStatus === 'signed-in' && !message && (
         <p className="text-center text-[11px] text-muted">
           Exports are saved to your{' '}
           <Link href="/gallery" className="underline underline-offset-2 hover:text-ink">
@@ -131,7 +146,7 @@ export function ExportPanel({ posterRef }: ExportPanelProps) {
           .
         </p>
       )}
-      {accountStatus === 'signed-out' && !message && (
+      {saveToGalleryOnExport && accountStatus === 'signed-out' && !message && (
         <p className="text-center text-[11px] text-muted">
           <button type="button" onClick={openSignIn} className="underline underline-offset-2 hover:text-ink">
             Sign in

@@ -46,6 +46,10 @@ export function sanitizePosterConfig(value: unknown): PosterConfig | null {
     watermarkText,
     overlayOpacity,
     contrastMode,
+    units,
+    privacyZone,
+    chart,
+    stamp,
   } = value;
 
   if (!TEMPLATE_IDS.includes(templateId as TemplateId)) return null;
@@ -57,6 +61,10 @@ export function sanitizePosterConfig(value: unknown): PosterConfig | null {
   if (typeof watermarkText !== 'string' || watermarkText.length > 64) return null;
   if (typeof overlayOpacity !== 'number' || overlayOpacity < 0 || overlayOpacity > 1) return null;
   if (contrastMode !== 'dark' && contrastMode !== 'light') return null;
+  if (units !== undefined && units !== 'km' && units !== 'mi') return null;
+  if (privacyZone !== undefined && typeof privacyZone !== 'boolean') return null;
+  if (chart !== undefined && chart !== 'elevation' && chart !== 'splits') return null;
+  if (stamp !== undefined && stamp !== 'qr' && stamp !== 'barcode') return null;
 
   return {
     templateId: templateId as TemplateId,
@@ -79,5 +87,9 @@ export function sanitizePosterConfig(value: unknown): PosterConfig | null {
     customOverlayImage: null,
     overlayOpacity,
     contrastMode,
+    units: units === 'mi' ? 'mi' : 'km',
+    privacyZone: privacyZone !== false,
+    chart: chart === 'splits' ? 'splits' : 'elevation',
+    stamp: stamp === 'barcode' ? 'barcode' : 'qr',
   };
 }

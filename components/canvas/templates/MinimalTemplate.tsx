@@ -4,7 +4,11 @@ import type { PosterData } from '@/components/canvas/PosterRenderer';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { MONO, SANS, SERIF, buildMetricCells, dayOfYear, serialFor } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
+import { displayDistance, distanceLabel, paceParts } from '@/lib/units';
 import { ElevationProfile } from '@/components/canvas/ElevationProfile';
+import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
+import { SplitsChart } from '@/components/canvas/SplitsChart';
+import { splitsFor } from '@/lib/splits';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -90,9 +94,15 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
   const contentWidth = width - t.pad * 2;
   const isSplit = t.layout === 'split';
 
-  const cells = buildMetricCells(metrics, config.showHeartRate);
+  const cells = buildMetricCells(metrics, config.showHeartRate, config.units);
+  const paceValue = paceParts(metrics, config.units);
+  const unit = distanceLabel(config.units);
   const serial = serialFor(metrics);
-  const hasElevation = config.showElevationProfile && rawPoints.some((p) => typeof p.ele === 'number');
+  const splits = splitsFor(metrics, config.units);
+  const showSplits = config.chart === 'splits' && splits.length >= 2;
+  // One chart slot: per-unit splits when chosen and available, otherwise elevation.
+  const hasElevation =
+    config.showElevationProfile && (showSplits || rawPoints.some((p) => typeof p.ele === 'number'));
 
   const small: CSSProperties = {
     fontFamily: MONO,
@@ -178,8 +188,8 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
               color: palette.primaryText,
             }}
           >
-            {metrics.distanceKm.toFixed(1)}
-            <span style={{ ...small, marginLeft: 10, color: palette.accent }}>km</span>
+            {displayDistance(metrics.distanceKm, config.units).toFixed(1)}
+            <span style={{ ...small, marginLeft: 10, color: palette.accent }}>{unit}</span>
           </div>
         </div>
       )}
@@ -211,7 +221,7 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
 
   const pace = (
     <section style={{ flexShrink: 0, marginTop: t.gap * 0.8 }}>
-      <div style={small}>Pace / km</div>
+      <div style={small}>Pace / {unit}</div>
       <div
         style={{
           fontFamily: SANS,
@@ -226,9 +236,9 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
           whiteSpace: 'nowrap',
         }}
       >
-        {metrics.paceMinutes}
+        {paceValue.minutes}
         <span style={{ color: palette.accent }}>&rsquo;</span>
-        {String(metrics.paceSeconds).padStart(2, '0')}
+        {String(paceValue.seconds).padStart(2, '0')}
         <span style={{ color: palette.accent }}>&rdquo;</span>
       </div>
     </section>
@@ -279,28 +289,50 @@ export function MinimalTemplate({ metrics, config, rawPoints, routePoints }: Pos
     <footer style={{ flexShrink: 0, marginTop: t.gap }}>
       {hasElevation && (
         <div style={{ lineHeight: 0, marginBottom: t.label * 1.4 }}>
-          <ElevationProfile
-            points={rawPoints}
-            color={palette.secondaryText}
-            variant="line"
-            strokeWidth={1.6}
-            width={contentWidth}
-            height={t.elevationHeight}
-          />
+          {showSplits ? (
+            <SplitsChart
+              splits={splits}
+              color={palette.secondaryText}
+              highlight={palette.accent}
+              barRatio={0.28}
+              width={contentWidth}
+              height={t.elevationHeight}
+            />
+          ) : (
+            <ElevationProfile
+              points={rawPoints}
+              color={palette.secondaryText}
+              variant="line"
+              strokeWidth={1.6}
+              width={contentWidth}
+              height={t.elevationHeight}
+            />
+          )}
         </div>
       )}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'baseline',
+          alignItems: config.stamp === 'barcode' ? 'baseline' : 'flex-end',
           borderTop: `1px solid ${palette.secondaryText}`,
           paddingTop: t.label * 1.1,
         }}
       >
-        <span style={{ ...small, fontSize: t.label - 1 }}>
-          {serial}
-          {metrics.gearBrand && <> · {metrics.gearBrand}</>}
+        <span style={{ display: 'flex', alignItems: 'flex-end', gap: t.label }}>
+          {config.stamp !== 'barcode' && (
+            <QrStamp
+              value={posterQrUrl()}
+              size={Math.round(t.label * 5.2)}
+              foreground={config.contrastMode === 'dark' ? palette.background : palette.primaryText}
+              background={config.contrastMode === 'dark' ? palette.primaryText : palette.background}
+              radius={3}
+            />
+          )}
+          <span style={{ ...small, fontSize: t.label - 1 }}>
+            {serial}
+            {metrics.gearBrand && <> · {metrics.gearBrand}</>}
+          </span>
         </span>
         {config.showWatermark && config.watermarkText.trim() && (
           <span

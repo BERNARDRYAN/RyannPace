@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const MAX_OVERLAY_BYTES = 12 * 1024 * 1024;
 
@@ -15,8 +16,12 @@ export function DisplayOptions() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [overlayError, setOverlayError] = useState<string | null>(null);
 
-  const { config, updateConfig } = usePosterStore(
-    useShallow((s) => ({ config: s.config, updateConfig: s.updateConfig }))
+  const { config, updateConfig, hasSplits } = usePosterStore(
+    useShallow((s) => ({
+      config: s.config,
+      updateConfig: s.updateConfig,
+      hasSplits: (s.metrics.splitsKm?.length ?? 0) >= 2,
+    }))
   );
 
   const onOverlayFile = (file: File | undefined) => {
@@ -48,10 +53,80 @@ export function DisplayOptions() {
         onCheckedChange={(showRoute) => updateConfig({ showRoute })}
       />
       <Switch
-        label="Elevation profile"
+        label="Privacy zone"
+        description="Hide the first & last 200 m of your route"
+        checked={config.privacyZone !== false}
+        onCheckedChange={(privacyZone) => updateConfig({ privacyZone })}
+      />
+      <Switch
+        label="Profile chart"
+        description="Elevation or per-km splits under the route"
         checked={config.showElevationProfile}
         onCheckedChange={(showElevationProfile) => updateConfig({ showElevationProfile })}
       />
+      {config.showElevationProfile && (
+        <div role="radiogroup" aria-label="Chart type" className="mb-2 grid grid-cols-2 gap-1 rounded-xl bg-studio p-1">
+          {(
+            [
+              ['elevation', 'Elevation'],
+              ['splits', 'Splits'],
+            ] as const
+          ).map(([mode, label]) => {
+            const active = (config.chart ?? 'elevation') === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => updateConfig({ chart: mode })}
+                className={cn(
+                  'rounded-lg py-1.5 text-xs font-medium transition-all',
+                  active ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {config.showElevationProfile && config.chart === 'splits' && !hasSplits && (
+        <p className="-mt-1 mb-2 text-[11px] text-muted">
+          This activity has no timestamps, so elevation is shown instead.
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-4 py-2">
+        <span>
+          <span className="block text-sm text-ink">Footer stamp</span>
+          <span className="block text-xs text-muted">QR code links people to RyannPace</span>
+        </span>
+        <div role="radiogroup" aria-label="Footer stamp" className="flex shrink-0 rounded-full bg-studio p-0.5">
+          {(
+            [
+              ['qr', 'QR'],
+              ['barcode', 'Barcode'],
+            ] as const
+          ).map(([value, label]) => {
+            const active = (config.stamp ?? 'qr') === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => updateConfig({ stamp: value })}
+                className={cn(
+                  'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                  active ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <Switch
         label="Heart rate"
         checked={config.showHeartRate}

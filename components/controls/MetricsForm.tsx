@@ -5,6 +5,16 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePosterStore } from '@/store/usePosterStore';
 import { formatDuration, formatPace, parseDuration, toDateInputValue } from '@/lib/format';
 import { useHydrated } from '@/hooks/useHydrated';
+import { cn } from '@/lib/utils';
+import {
+  displayDistance,
+  displayElevation,
+  distanceLabel,
+  elevationLabel,
+  paceParts,
+  toKm,
+  toMeters,
+} from '@/lib/units';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -95,9 +105,16 @@ function DurationField({ value, onCommit }: { value: number; onCommit: (seconds:
 
 export function MetricsForm() {
   const hydrated = useHydrated();
-  const { metrics, updateMetrics } = usePosterStore(
-    useShallow((s) => ({ metrics: s.metrics, updateMetrics: s.updateMetrics }))
+  const { metrics, updateMetrics, units, updateConfig } = usePosterStore(
+    useShallow((s) => ({
+      metrics: s.metrics,
+      updateMetrics: s.updateMetrics,
+      units: s.config.units,
+      updateConfig: s.updateConfig,
+    }))
   );
+  const pace = paceParts(metrics, units);
+  const round = (n: number, digits: number) => Number(n.toFixed(digits));
 
   const onDateChange = (value: string) => {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -112,6 +129,27 @@ export function MetricsForm() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">Units</span>
+        <div role="radiogroup" aria-label="Distance units" className="flex rounded-full bg-studio p-0.5">
+          {(['km', 'mi'] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              role="radio"
+              aria-checked={(units ?? 'km') === u}
+              onClick={() => updateConfig({ units: u })}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                (units ?? 'km') === u ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+              )}
+            >
+              {u === 'km' ? 'Kilometres' : 'Miles'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div>
         <Label htmlFor="metric-title">Activity title</Label>
         <Input
@@ -148,14 +186,15 @@ export function MetricsForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <NumberField
+          key={`distance-${units ?? 'km'}`}
           id="metric-distance"
           label="Distance"
-          unit="km"
+          unit={distanceLabel(units)}
           step={0.01}
           min={0}
           max={1000}
-          value={metrics.distanceKm}
-          onCommit={(v) => updateMetrics({ distanceKm: v ?? 0 })}
+          value={round(displayDistance(metrics.distanceKm, units), 2)}
+          onCommit={(v) => updateMetrics({ distanceKm: toKm(v ?? 0, units) })}
         />
         <DurationField value={metrics.durationSeconds} onCommit={(durationSeconds) => updateMetrics({ durationSeconds })} />
       </div>
@@ -163,18 +202,20 @@ export function MetricsForm() {
       <div className="flex items-center justify-between rounded-lg bg-studio px-3 py-2.5">
         <span className="font-mono text-[10px] tracking-[0.18em] text-muted uppercase">Avg pace · auto</span>
         <span className="font-mono text-sm font-semibold text-ink tabular-nums">
-          {formatPace(metrics.paceMinutes, metrics.paceSeconds)} <span className="font-normal text-muted">/km</span>
+          {formatPace(pace.minutes, pace.seconds)}{' '}
+          <span className="font-normal text-muted">/{distanceLabel(units)}</span>
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <NumberField
+          key={`elevation-${units ?? 'km'}`}
           id="metric-elevation"
           label="Elev."
-          unit="m"
-          max={20000}
-          value={metrics.elevationGainMeters}
-          onCommit={(v) => updateMetrics({ elevationGainMeters: v ?? 0 })}
+          unit={elevationLabel(units)}
+          max={units === 'mi' ? 65000 : 20000}
+          value={Math.round(displayElevation(metrics.elevationGainMeters, units))}
+          onCommit={(v) => updateMetrics({ elevationGainMeters: toMeters(v ?? 0, units) })}
         />
         <NumberField
           id="metric-hr"

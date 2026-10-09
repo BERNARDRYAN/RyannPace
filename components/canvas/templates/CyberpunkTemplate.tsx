@@ -5,8 +5,13 @@ import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import { formatPosterDate, formatPosterTime } from '@/lib/format';
 import { MONO, SANS, buildMetricCells, dayOfYear, serialFor, withAlpha } from '@/lib/poster-helpers';
 import { RouteSvg } from '@/components/canvas/RouteSvg';
+import { displayDistance, displayElevation, distanceLabel, elevationLabel, paceParts } from '@/lib/units';
+import { formatPace } from '@/lib/format';
 import { ElevationProfile } from '@/components/canvas/ElevationProfile';
+import { SplitsChart } from '@/components/canvas/SplitsChart';
+import { splitsFor } from '@/lib/splits';
 import { Barcode } from '@/components/canvas/Barcode';
+import { QrStamp, posterQrUrl } from '@/components/canvas/QrStamp';
 
 interface LayoutTokens {
   layout: 'stack' | 'split';
@@ -114,12 +119,18 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
   const dim = palette.secondaryText;
   const line = withAlpha(neon, 0.32);
 
-  const cells = buildMetricCells(metrics, config.showHeartRate);
+  const cells = buildMetricCells(metrics, config.showHeartRate, config.units);
+  const pace = paceParts(metrics, config.units);
+  const unit = distanceLabel(config.units);
   const start = rawPoints[0];
   const serial = serialFor(metrics);
   const dateLabel = formatPosterDate(metrics.date);
   const timeLabel = formatPosterTime(metrics.date);
-  const hasElevation = config.showElevationProfile && rawPoints.some((p) => typeof p.ele === 'number');
+  const splits = splitsFor(metrics, config.units);
+  const showSplits = config.chart === 'splits' && splits.length >= 2;
+  // One chart slot: per-unit splits when chosen and available, otherwise elevation.
+  const hasElevation =
+    config.showElevationProfile && (showSplits || rawPoints.some((p) => typeof p.ele === 'number'));
   const maxEle = rawPoints.reduce((m, p) => (typeof p.ele === 'number' && p.ele > m ? p.ele : m), -Infinity);
 
   const hudText: CSSProperties = {
@@ -274,8 +285,8 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
               textShadow: `0 0 30px ${withAlpha(neon, 0.6)}`,
             }}
           >
-            {metrics.distanceKm.toFixed(2)}
-            <span style={{ fontSize: t.title * 0.4, marginLeft: 10, color: accent }}>KM</span>
+            {displayDistance(metrics.distanceKm, config.units).toFixed(2)}
+            <span style={{ fontSize: t.title * 0.4, marginLeft: 10, color: accent }}>{unit.toUpperCase()}</span>
           </div>
         )}
       </div>
@@ -283,18 +294,43 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
       {hasElevation && (
         <div style={{ flexShrink: 0 }}>
           <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span>Alt.Profile</span>
-            {Number.isFinite(maxEle) && <span style={{ color: accent }}>▲ {Math.round(maxEle)} m</span>}
+            {showSplits ? (
+              <>
+                <span>Splits/{unit}</span>
+                <span style={{ color: accent }}>
+                  ▲ {formatPace(Math.floor(Math.min(...splits) / 60), Math.min(...splits) % 60)}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>Alt.Profile</span>
+                {Number.isFinite(maxEle) && (
+                  <span style={{ color: accent }}>
+                    ▲ {Math.round(displayElevation(maxEle, config.units))} {elevationLabel(config.units)}
+                  </span>
+                )}
+              </>
+            )}
           </div>
           <div style={{ lineHeight: 0 }}>
-            <ElevationProfile
-              points={rawPoints}
-              color={neon}
-              highlight={accent}
-              variant="bars"
-              width={panelWidth - panelPad * 2}
-              height={t.elevationHeight}
-            />
+            {showSplits ? (
+              <SplitsChart
+                splits={splits}
+                color={neon}
+                highlight={accent}
+                width={panelWidth - panelPad * 2}
+                height={t.elevationHeight}
+              />
+            ) : (
+              <ElevationProfile
+                points={rawPoints}
+                color={neon}
+                highlight={accent}
+                variant="bars"
+                width={panelWidth - panelPad * 2}
+                height={t.elevationHeight}
+              />
+            )}
           </div>
         </div>
       )}
@@ -305,7 +341,7 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
     <section style={{ flexShrink: 0, marginTop: isSplit ? 0 : t.gap }}>
       <div style={{ ...hudText, display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: palette.primaryText }}>Avg.Pace</span>
-        <span>[min/km]</span>
+        <span>[min/{unit}]</span>
       </div>
       <div
         style={{
@@ -322,9 +358,9 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
           whiteSpace: 'nowrap',
         }}
       >
-        {String(metrics.paceMinutes).padStart(2, '0')}
+        {String(pace.minutes).padStart(2, '0')}
         <span style={{ color: accent, textShadow: `0 0 ${t.pace * 0.15}px ${withAlpha(accent, 0.7)}` }}>&rsquo;</span>
-        {String(metrics.paceSeconds).padStart(2, '0')}
+        {String(pace.seconds).padStart(2, '0')}
         <span style={{ color: accent, textShadow: `0 0 ${t.pace * 0.15}px ${withAlpha(accent, 0.7)}` }}>&rdquo;</span>
       </div>
     </section>
@@ -404,12 +440,22 @@ export function CyberpunkTemplate({ metrics, config, rawPoints, routePoints }: P
     >
       <div>
         <div style={{ lineHeight: 0, filter: `drop-shadow(0 0 6px ${withAlpha(neon, 0.5)})` }}>
-          <Barcode
-            seed={`${serial}|${metrics.durationSeconds}|${metrics.activityTitle}`}
-            color={neon}
-            width={t.barcode.width}
-            height={t.barcode.height}
-          />
+          {config.stamp === 'barcode' ? (
+            <Barcode
+              seed={`${serial}|${metrics.durationSeconds}|${metrics.activityTitle}`}
+              color={neon}
+              width={t.barcode.width}
+              height={t.barcode.height}
+            />
+          ) : (
+            // Black modules on a neon tile: on-brand, and not inverted, so all scanners read it.
+            <QrStamp
+              value={posterQrUrl()}
+              size={Math.round(t.barcode.height * 1.9)}
+              foreground={palette.background}
+              background={neon}
+            />
+          )}
         </div>
         <div style={{ ...hudText, fontSize: t.label - 2, marginTop: t.label * 0.6 }}>
           ID <span style={{ color: palette.primaryText }}>{serial}</span>
