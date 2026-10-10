@@ -254,6 +254,9 @@ export function LandingContent() {
             <Link href="/gallery" className="hover:text-ink">
               {t('Gallery')}
             </Link>
+            <Link href="/privacy" className="hover:text-ink">
+              {t('Privacy Policy')}
+            </Link>
           </nav>
           <span>© {new Date().getFullYear()} RyannPace</span>
         </div>

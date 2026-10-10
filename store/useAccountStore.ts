@@ -20,6 +20,8 @@ type Result = { ok: true } | { ok: false; error: string };
 interface AccountState {
   status: AccountStatus;
   user: AccountUser | null;
+  /** Social sign-ins enabled in Supabase; buttons only show for these. */
+  providers: { google: boolean };
   presets: UserPreset[];
   presetsLoading: boolean;
   signInOpen: boolean;
@@ -61,6 +63,9 @@ async function callApi<T>(input: string, init?: RequestInit): Promise<{ ok: true
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   otp_expired: 'That sign-in link has expired. Request a new one.',
   pkce_code_verifier_not_found: 'Open the sign-in link in the same browser you requested it from.',
+  provider_disabled: 'Google sign-in is not switched on yet. Use the email link for now.',
+  oauth_start: 'Could not start Google sign-in. Try again or use the email link.',
+  access_denied: 'Google sign-in was cancelled.',
   bad_code_verifier:'Open the sign-in link in the same browser you requested it from.',
   flow_state_not_found: 'Open the sign-in link in the same browser you requested it from.',
 };
@@ -83,6 +88,7 @@ let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 export const useAccountStore = create<AccountState>()((set, get) => ({
   status: 'unknown',
   user: null,
+  providers: { google: false },
   presets: [],
   presetsLoading: false,
   signInOpen: false,
@@ -92,7 +98,12 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     const redirectNotice = consumeAuthRedirect();
     if (redirectNotice) get().showNotice(redirectNotice);
 
-    const res = await callApi<{ configured: boolean; user: AccountUser | null }>('/api/auth/session');
+    const res = await callApi<{
+      configured: boolean;
+      user: AccountUser | null;
+      providers?: { google: boolean };
+    }>('/api/auth/session');
+    if (res.ok) set({ providers: { google: res.data.providers?.google === true } });
     if (!res.ok || !res.data.configured) {
       set({ status: 'unavailable', user: null, presets: [] });
       return;

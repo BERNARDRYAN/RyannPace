@@ -57,6 +57,16 @@ test('Chinese language switch translates the UI and posters, and persists', asyn
   await expect(page.getByRole('link', { name: '作品集' })).toBeVisible();
 });
 
+test('privacy policy is reachable in English and Chinese', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Privacy Policy' }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy Policy');
+  await expect(page.getByText('never uploaded').first()).toBeVisible();
+  await page.getByRole('button', { name: '切换到中文' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('隐私政策');
+});
+
 test('404 page', async ({ page }) => {
   const res = await page.goto('/this-page-does-not-exist');
   expect(res?.status()).toBe(404);
@@ -104,6 +114,23 @@ test.describe('API without a session', () => {
     const body = await (await request.get('/api/health')).json();
     expect(Object.keys(body).sort()).toEqual(['db', 'ok']);
     expect(['ok', 'unconfigured', 'error']).toContain(body.db);
+  });
+
+  test('Google sign-in starts only when enabled, and never shows a raw error page', async ({ request }) => {
+    const session = await (await request.get('/api/auth/session')).json();
+    const res = await request.get('/api/auth/google?next=/studio', { maxRedirects: 0 });
+    expect(res.status()).toBe(307);
+    const location = res.headers()['location'] ?? '';
+    if (session.providers?.google) {
+      expect(location).toMatch(/supabase\.co\/auth\/v1\/authorize\?provider=google/);
+    } else {
+      expect(location).toMatch(/\/studio\?auth=error&reason=(provider_disabled|unavailable)$/);
+    }
+  });
+
+  test('Google sign-in only accepts safe return paths', async ({ request }) => {
+    const res = await request.get('/api/auth/google?next=https://evil.example', { maxRedirects: 0 });
+    expect(res.headers()['location'] ?? '').not.toContain('evil.example');
   });
 
   test('magic-link callback without a code fails safely', async ({ request }) => {

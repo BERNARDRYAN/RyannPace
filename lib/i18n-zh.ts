@@ -40,6 +40,13 @@ export const ZH: Record<string, string> = {
   'Open the sign-in link in the same browser you requested it from.': '请在申请登录的同一个浏览器中打开登录链接。',
   'Sign-in failed. Please request a new link.': '登录失败，请重新获取链接。',
   'Sign in to continue.': '请先登录。',
+  'Continue with Google': '使用 Google 继续',
+  'or use email': '或使用邮箱',
+  'By continuing you agree to our': '继续即表示你同意我们的',
+  'Privacy Policy': '隐私政策',
+  'Google sign-in is not switched on yet. Use the email link for now.': 'Google 登录尚未开启，请先使用邮箱链接登录。',
+  'Could not start Google sign-in. Try again or use the email link.': '无法启动 Google 登录，请重试或使用邮箱链接。',
+  'Google sign-in was cancelled.': '已取消 Google 登录。',
   'Please complete the security check and try again.': '请先完成安全验证再重试。',
 
   // ---------- Studio: route ----------

@@ -22,7 +22,8 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code');
 
   if (!isSupabaseConfigured() || !code) {
-    const reason = url.searchParams.get('error_code') ?? 'missing_code';
+    // Providers report problems as ?error=…&error_code=… (e.g. access_denied when cancelled).
+    const reason = url.searchParams.get('error_code') ?? url.searchParams.get('error') ?? 'missing_code';
     destination.searchParams.set('auth', 'error');
     destination.searchParams.set('reason', reason);
     return NextResponse.redirect(destination);
