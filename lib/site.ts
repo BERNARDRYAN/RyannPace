@@ -22,4 +22,5 @@ export function siteUrl(): string {
  * Google OAuth Web client ID for "Sign in with Google" (Google Identity Services).
  * Public by design: Google requires it in the page. NEXT_PUBLIC_GOOGLE_CLIENT_ID overrides it.
  */
-export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+export const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '917757175844-m1d6huiah11rm5upspl24ds3mqi2cdq8.apps.googleusercontent.com';
