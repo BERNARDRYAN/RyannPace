@@ -176,6 +176,13 @@ export function BibTemplate({ metrics, config, rawPoints, routePoints }: PosterD
 
   const innerWidth = width - t.outerX * 2 - t.pad * 2;
   const routeBoxWidth = Math.round(innerWidth * 0.46);
+  // Usable text width inside one stat tile (two columns beside the route box).
+  const tileInner = (innerWidth - routeBoxWidth - t.gap - t.gap * 0.6) / 2 - t.label * 2.2;
+  // Heavy digits run about 0.6em wide; shrink long values (e.g. 3:41:12) to fit.
+  const CHAR_EM = 0.6;
+  const fitValue = (value: string) => Math.min(t.statValue, tileInner / (value.length * CHAR_EM));
+  const unitFitsInline = (value: string, unitText: string, size: number) =>
+    (value.length + unitText.length * 0.45) * CHAR_EM * size + 4 <= tileInner;
 
   return (
     <div style={{ position: 'relative', width, height, background: surface, overflow: 'hidden', fontFamily: SANS }}>
@@ -237,7 +244,7 @@ export function BibTemplate({ metrics, config, rawPoints, routePoints }: PosterD
 
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: `${t.gap}px ${t.pad}px 0` }}>
           {/* Bib number */}
-          <div style={{ ...label, textAlign: 'center' }}>{tx('Bib No.')}</div>
+          <div style={{ ...label, fontSize: t.label * 1.7, fontWeight: 700, textAlign: 'center' }}>{tx('Bib No.')}</div>
           <div
             style={{
               fontFamily: SANS,
@@ -323,7 +330,10 @@ export function BibTemplate({ metrics, config, rawPoints, routePoints }: PosterD
                 gap: t.gap * 0.6,
               }}
             >
-              {tiles.map((tile) => (
+              {tiles.map((tile) => {
+                const size = fitValue(tile.value);
+                const inline = !tile.unit || unitFitsInline(tile.value, tile.unit, size);
+                return (
                 <div
                   key={tile.key}
                   style={{
@@ -340,7 +350,7 @@ export function BibTemplate({ metrics, config, rawPoints, routePoints }: PosterD
                   <div
                     style={{
                       fontWeight: 800,
-                      fontSize: t.statValue,
+                      fontSize: size,
                       letterSpacing: '-0.03em',
                       lineHeight: 1,
                       whiteSpace: 'nowrap',
@@ -349,11 +359,24 @@ export function BibTemplate({ metrics, config, rawPoints, routePoints }: PosterD
                   >
                     {tile.value}
                     {tile.unit && (
-                      <span style={{ fontSize: t.statValue * 0.38, fontWeight: 600, color: muted, marginLeft: 4 }}>{tile.unit}</span>
+                      <span
+                        style={{
+                          display: inline ? 'inline' : 'block',
+                          fontSize: t.statValue * 0.38,
+                          fontWeight: 600,
+                          color: muted,
+                          marginLeft: inline ? 4 : 0,
+                          marginTop: inline ? 0 : 6,
+                          letterSpacing: 0,
+                        }}
+                      >
+                        {tile.unit}
+                      </span>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
