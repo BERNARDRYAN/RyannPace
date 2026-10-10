@@ -29,9 +29,9 @@ interface Tokens {
 }
 
 const TOKENS: Record<AspectRatio, Tokens> = {
-  '9:16': { pad: 64, gap: 18, radius: 28, title: 58, label: 17, hero: 230, value: 76, tilePad: 30, stamp: 92, rows: 'auto auto auto 1fr' },
-  '4:5': { pad: 54, gap: 14, radius: 24, title: 46, label: 15, hero: 170, value: 58, tilePad: 24, stamp: 78, rows: 'auto auto auto 1fr' },
-  '1:1': { pad: 46, gap: 12, radius: 20, title: 40, label: 13, hero: 132, value: 46, tilePad: 20, stamp: 68, rows: 'auto auto auto 1fr' },
+  '9:16': { pad: 64, gap: 18, radius: 28, title: 58, label: 17, hero: 230, value: 76, tilePad: 30, stamp: 108, rows: 'auto auto auto 1fr' },
+  '4:5': { pad: 54, gap: 14, radius: 24, title: 46, label: 15, hero: 170, value: 58, tilePad: 24, stamp: 96, rows: 'auto auto auto 1fr' },
+  '1:1': { pad: 46, gap: 12, radius: 20, title: 40, label: 13, hero: 132, value: 46, tilePad: 20, stamp: 88, rows: 'auto auto auto 1fr' },
 };
 
 /**

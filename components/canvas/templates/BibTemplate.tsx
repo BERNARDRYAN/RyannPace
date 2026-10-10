@@ -65,7 +65,7 @@ const TOKENS: Record<AspectRatio, Tokens> = {
     chart: 64,
     tab: 118,
     finisher: 52,
-    stamp: 92,
+    stamp: 96,
   },
   '1:1': {
     outerX: 48,
@@ -82,7 +82,7 @@ const TOKENS: Record<AspectRatio, Tokens> = {
     chart: 50,
     tab: 100,
     finisher: 44,
-    stamp: 78,
+    stamp: 88,
   },
 };
 

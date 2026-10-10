@@ -53,7 +53,7 @@ const TOKENS: Record<AspectRatio, Tokens> = {
     footer: 104,
     chartWidth: 360,
     chartHeight: 70,
-    stamp: 84,
+    stamp: 92,
   },
   '1:1': {
     pad: 46,
@@ -66,7 +66,7 @@ const TOKENS: Record<AspectRatio, Tokens> = {
     footer: 92,
     chartWidth: 300,
     chartHeight: 56,
-    stamp: 74,
+    stamp: 88,
   },
 };
 
