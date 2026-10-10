@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
+import { siteUrl } from '@/lib/site';
 import { AccountProvider } from '@/components/account/AccountProvider';
 
 /** Cloudflare Web Analytics (cookie-free). Public token; loads only when configured. */
@@ -29,7 +30,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   // Absolute base for social preview images; SITE_URL is set in production.
-  metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   openGraph: { type: 'website', siteName: 'RyannPace' },
   twitter: { card: 'summary_large_image' },
   title: { default: 'RyannPace — Editorial Running Posters', template: '%s · RyannPace' },
