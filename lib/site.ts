@@ -17,3 +17,9 @@ export function siteUrl(): string {
   if (configured) return configured;
   return process.env.NODE_ENV === 'production' ? PRODUCTION_URL : 'http://localhost:3000';
 }
+
+/**
+ * Google OAuth Web client ID for "Sign in with Google" (Google Identity Services).
+ * Public by design: Google requires it in the page. NEXT_PUBLIC_GOOGLE_CLIENT_ID overrides it.
+ */
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';

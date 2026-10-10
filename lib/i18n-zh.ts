@@ -47,6 +47,9 @@ export const ZH: Record<string, string> = {
   'Google sign-in is not switched on yet. Use the email link for now.': 'Google 登录尚未开启，请先使用邮箱链接登录。',
   'Could not start Google sign-in. Try again or use the email link.': '无法启动 Google 登录，请重试或使用邮箱链接。',
   'Google sign-in was cancelled.': '已取消 Google 登录。',
+  'Google sign-in failed. Please try again.': 'Google 登录失败，请重试。',
+  'Google sign-in expired. Please try again.': 'Google 登录已过期，请重试。',
+  'Invalid Google sign-in response.': 'Google 登录返回无效，请重试。',
   'Please complete the security check and try again.': '请先完成安全验证再重试。',
 
   // ---------- Studio: route ----------

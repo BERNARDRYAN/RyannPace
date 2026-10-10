@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TURNSTILE_SITE_KEY, Turnstile } from '@/components/account/Turnstile';
+import { GoogleSignInButton } from '@/components/account/GoogleSignInButton';
+import { GOOGLE_CLIENT_ID } from '@/lib/site';
 import { useLocaleStore } from '@/store/useLocaleStore';
 import { useT } from '@/store/useLocaleStore';
 
@@ -38,6 +40,16 @@ export function SignInDialog() {
   const needsCaptcha = !!TURNSTILE_SITE_KEY;
   const googleEnabled = useAccountStore((s) => s.providers.google);
   const [googleRedirecting, setGoogleRedirecting] = useState(false);
+  // Google's own button (shows this site's address) when a client ID is set and its script loads;
+  // otherwise the Supabase redirect flow.
+  const [gisUnavailable, setGisUnavailable] = useState(false);
+  const useGoogleButton = !!GOOGLE_CLIENT_ID && !gisUnavailable;
+
+  const onGoogleSignedIn = async () => {
+    closeSignIn();
+    await useAccountStore.getState().init();
+    useAccountStore.getState().showNotice({ kind: 'success', text: 'Signed in. Your presets are ready.' });
+  };
   const t = useT();
 
   useEffect(() => {
@@ -111,6 +123,14 @@ export function SignInDialog() {
             </p>
             {googleEnabled && (
               <>
+                {useGoogleButton ? (
+                  <GoogleSignInButton
+                    locale={locale}
+                    onSignedIn={() => void onGoogleSignedIn()}
+                    onError={(message) => setStep({ kind: 'form', error: message })}
+                    onUnavailable={() => setGisUnavailable(true)}
+                  />
+                ) : (
                 <a
                   href={`/api/auth/google?next=${encodeURIComponent(typeof window === 'undefined' ? '/studio' : window.location.pathname)}`}
                   onClick={() => setGoogleRedirecting(true)}
@@ -120,6 +140,7 @@ export function SignInDialog() {
                   {googleRedirecting ? <LoaderCircle className="size-4 animate-spin" /> : <GoogleMark />}
                   {t('Continue with Google')}
                 </a>
+                )}
                 <div className="my-4 flex items-center gap-3 text-[11px] tracking-wider text-muted uppercase">
                   <span className="h-px flex-1 bg-line" />
                   {t('or use email')}

@@ -1,10 +1,13 @@
 import type { NextConfig } from 'next';
-import { CF_ANALYTICS_TOKEN } from './lib/site';
+import { CF_ANALYTICS_TOKEN, GOOGLE_CLIENT_ID } from './lib/site';
 
 const isDev = process.env.NODE_ENV !== 'production';
 // Optional Cloudflare services, allowed in the policy only when configured.
 const turnstile = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 const webAnalytics = !!CF_ANALYTICS_TOKEN;
+const googleSignIn = !!GOOGLE_CLIENT_ID;
+const GSI = 'https://accounts.google.com/gsi/';
+const frameSources = [turnstile && 'https://challenges.cloudflare.com', googleSignIn && GSI].filter(Boolean);
 
 /**
  * Content-Security-Policy, scoped to what the app actually loads:
@@ -18,12 +21,12 @@ const webAnalytics = !!CF_ANALYTICS_TOKEN;
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${turnstile ? ' https://challenges.cloudflare.com' : ''}${webAnalytics ? ' https://static.cloudflareinsights.com' : ''}`,
-  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${turnstile ? ' https://challenges.cloudflare.com' : ''}${webAnalytics ? ' https://static.cloudflareinsights.com' : ''}${googleSignIn ? ` ${GSI}client` : ''}`,
+  `style-src 'self' 'unsafe-inline'${googleSignIn ? ` ${GSI}style` : ''}`,
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
-  `connect-src 'self' data: blob:${isDev ? ' ws: wss:' : ''}${webAnalytics ? ' https://cloudflareinsights.com' : ''}`,
-  `frame-src ${turnstile ? 'https://challenges.cloudflare.com' : "'none'"}`,
+  `connect-src 'self' data: blob:${isDev ? ' ws: wss:' : ''}${webAnalytics ? ' https://cloudflareinsights.com' : ''}${googleSignIn ? ` ${GSI}` : ''}`,
+  `frame-src ${frameSources.length ? frameSources.join(' ') : "'none'"}`,
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "object-src 'none'",
@@ -40,7 +43,8 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()' },
-  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  // allow-popups: Google's sign-in popup must be able to message this page back.
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
   // Browsers only honor HSTS over HTTPS, so this is inert on localhost.
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
 ];
