@@ -23,4 +23,4 @@ export function siteUrl(): string {
  * Public by design: Google requires it in the page. NEXT_PUBLIC_GOOGLE_CLIENT_ID overrides it.
  */
 export const GOOGLE_CLIENT_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '917757175844-m1d6huiah11rm5upspl24ds3mqi2cdq8.apps.googleusercontent.com';
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '656332978004-2dakana91un0rahurgref4fp38i4o7tf.apps.googleusercontent.com';

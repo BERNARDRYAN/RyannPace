@@ -3,6 +3,17 @@ import { cookies } from 'next/headers';
 import { errorResponse, readJsonObject } from '@/lib/api';
 import { createSupabaseServerClient, isSameOrigin, isSupabaseConfigured } from '@/lib/supabase';
 import { GOOGLE_NONCE_COOKIE } from '@/lib/auth-redirect';
+import { GOOGLE_CLIENT_ID } from '@/lib/site';
+
+/** Unverified payload claims, for diagnostics only (Supabase does the verification). */
+function readTokenClaims(jwt: string): Record<string, unknown> | null {
+  try {
+    const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, '=')));
+  } catch {
+    return null;
+  }
+}
 
 /**
  * POST /api/auth/google/token  body { credential }
@@ -27,12 +38,26 @@ export async function POST(request: Request) {
   const store = await cookies();
   const nonce = store.get(GOOGLE_NONCE_COOKIE)?.value;
   store.delete(GOOGLE_NONCE_COOKIE);
-  if (!nonce) return errorResponse(400, 'Google sign-in expired. Please try again.');
+  if (!nonce) {
+    console.warn('[api/auth/google/token] nonce cookie missing (expired, blocked, or never set)');
+    return errorResponse(400, 'Google sign-in expired. Please try again.');
+  }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: credential, nonce });
   if (error) {
-    console.error('[api/auth/google/token] failed:', error.message);
+    // aud vs expected client ID pinpoints the most common failure (a client ID
+    // mismatch between this site and Supabase's Google provider settings).
+    const claims = readTokenClaims(credential);
+    console.error('[api/auth/google/token] signInWithIdToken failed:', {
+      status: error.status,
+      code: error.code,
+      message: error.message,
+      tokenAud: claims?.aud,
+      tokenIss: claims?.iss,
+      tokenHasNonce: typeof claims?.nonce === 'string',
+      expectedAud: GOOGLE_CLIENT_ID,
+    });
     return errorResponse(401, 'Google sign-in failed. Please try again.');
   }
   return NextResponse.json({ ok: true });

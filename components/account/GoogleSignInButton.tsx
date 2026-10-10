@@ -85,6 +85,7 @@ export function GoogleSignInButton({ onSignedIn, onError, onUnavailable, locale 
               callbacks.current.onSignedIn();
             } else {
               const body = (await result.json().catch(() => null)) as { error?: string } | null;
+              console.error('[GoogleSignInButton] token exchange failed:', result.status, body?.error);
               callbacks.current.onError(body?.error ?? 'Google sign-in failed. Please try again.');
               setAttempt((n) => n + 1);
             }
