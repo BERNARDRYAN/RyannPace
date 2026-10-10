@@ -12,6 +12,8 @@ interface ElevationProfileProps {
   /** Highlights the summit bar in the `bars` variant. */
   highlight?: string;
   strokeWidth?: number;
+  /** Stretch to fill the parent box; strokes keep their width while stretched. */
+  fluid?: boolean;
 }
 
 const SAMPLES = 220;
@@ -25,7 +27,11 @@ export function ElevationProfile({
   variant = 'area',
   highlight,
   strokeWidth = 2,
+  fluid,
 }: ElevationProfileProps) {
+  const svgSize = fluid
+    ? { width: '100%', height: '100%', preserveAspectRatio: 'none' as const }
+    : { width, height };
   const gradientId = `rp${useId().replace(/[^a-zA-Z0-9_-]/g, '')}-elev`;
 
   const shape = useMemo(() => {
@@ -71,7 +77,7 @@ export function ElevationProfile({
   if (variant === 'bars') {
     const slot = width / shape.bars.length;
     return (
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
+      <svg {...svgSize} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
         {shape.bars.map((h, i) => (
           <rect
             key={i}
@@ -89,14 +95,14 @@ export function ElevationProfile({
 
   if (variant === 'line') {
     return (
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
-        <path d={shape.line} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <svg {...svgSize} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
+        <path d={shape.line} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       </svg>
     );
   }
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
+    <svg {...svgSize} viewBox={`0 0 ${width} ${height}`} aria-label="Elevation profile">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity={0.28} />
@@ -104,7 +110,7 @@ export function ElevationProfile({
         </linearGradient>
       </defs>
       <path d={shape.area} fill={`url(#${gradientId})`} />
-      <path d={shape.line} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <path d={shape.line} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

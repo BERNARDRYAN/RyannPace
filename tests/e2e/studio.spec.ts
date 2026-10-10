@@ -72,10 +72,10 @@ test.describe('Studio', () => {
     expect(decodeQr(png)).toMatch(/\/\?ref=poster$/);
   });
 
-  for (const template of ['Cyberpunk', 'Minimal'] as const) {
+  for (const template of ['Cyberpunk', 'Minimal', 'Race Bib', 'Retro Mag', 'Stats Card'] as const) {
     test(`${template} exports at 1x and its QR scans`, async ({ page }) => {
       await page.getByRole('radio', { name: /^1x/ }).click();
-      await page.getByRole('button', { name: new RegExp(`^${template}`) }).click();
+      await page.getByRole('button', { name: new RegExp(template) }).click();
       await page.getByRole('radio', { name: /1:1/ }).first().click();
       const png = await exportPng(page);
       expect(pngSize(png)).toEqual({ width: 1080, height: 1080 });

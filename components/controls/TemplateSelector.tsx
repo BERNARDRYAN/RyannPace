@@ -9,6 +9,46 @@ import { useT } from '@/store/useLocaleStore';
 
 /** Miniature layout sketches so each card reads at a glance. */
 function TemplateGlyph({ id }: { id: TemplateId }) {
+  if (id === 'bib') {
+    return (
+      <div className="flex h-full items-center justify-center bg-[#2B2D31] p-1.5">
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-[3px] bg-[#F7F5EF]">
+          <div className="h-1.5 bg-[#E4572E]" />
+          <div className="flex flex-1 items-center justify-center text-[15px] leading-none font-black text-ink">278</div>
+          <div className="mx-1 border-t border-dashed border-stone-400" />
+          <div className="py-0.5 text-center text-[6px] font-black tracking-wider text-[#E4572E]">FINISHER</div>
+        </div>
+      </div>
+    );
+  }
+  if (id === 'retro') {
+    return (
+      <div className="relative flex h-full flex-col bg-[#F4E3C3] p-1.5">
+        <div className="-skew-x-12 text-[10px] leading-none font-black text-[#E8442E]">RYANN</div>
+        <div className="mt-0.5 h-px bg-[#1B1B1B]" />
+        <div className="absolute top-5 left-1 size-5 rotate-12 rounded-full bg-[#F9C846]" />
+        <svg viewBox="0 0 40 24" className="mt-auto h-5 w-full">
+          <path d="M6 18 C12 4, 22 20, 34 6" fill="none" stroke="#1D4E89" strokeWidth="3" />
+        </svg>
+        <div className="text-[7px] leading-none font-black text-[#1B1B1B] italic">LONG RUN</div>
+      </div>
+    );
+  }
+  if (id === 'stats') {
+    return (
+      <div className="grid h-full grid-cols-2 gap-0.5 bg-[#ECECE8] p-1">
+        <div className="col-span-2 flex items-end rounded-[3px] bg-white p-0.5 text-[11px] leading-none font-black text-[#2563EB]">10.0</div>
+        <div className="rounded-[3px] bg-white" />
+        <div className="rounded-[3px] bg-white" />
+        <div className="rounded-[3px] bg-white" />
+        <div className="flex items-end gap-px rounded-[3px] bg-white p-0.5">
+          {[3, 5, 4, 6, 4].map((h, i) => (
+            <span key={i} className="w-0.5 bg-[#2563EB]" style={{ height: h }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (id === 'cyberpunk') {
     return (
       <div className="flex h-full flex-col justify-between bg-black p-1.5">
@@ -66,6 +106,7 @@ export function TemplateSelector() {
             )}
           >
             <div
+              aria-hidden
               className={cn(
                 'relative aspect-[3/4] overflow-hidden rounded-lg border-2 transition-colors',
                 active ? 'border-ink' : 'border-line group-enabled:group-hover:border-line-strong'

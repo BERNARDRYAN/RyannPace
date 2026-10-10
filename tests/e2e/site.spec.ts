@@ -96,6 +96,13 @@ test.describe('API without a session', () => {
     expect([403, 503]).toContain(res.status());
   });
 
+  test('account deletion requires sign-in and a same-site request', async ({ request }) => {
+    const anon = await request.post('/api/account/delete', { data: { confirm: 'DELETE' } });
+    expect([401, 503]).toContain(anon.status());
+    const cross = await request.post('/api/account/delete', { data: { confirm: 'DELETE' }, headers: { Origin: 'https://evil.example' } });
+    expect([403, 503]).toContain(cross.status());
+  });
+
   test('sign-in validates input', async ({ request }) => {
     const res = await request.post('/api/auth/sign-in', { data: { email: 'not-an-email' } });
     expect([400, 503]).toContain(res.status());
@@ -138,4 +145,18 @@ test.describe('API without a session', () => {
     expect(res.status()).toBe(307);
     expect(res.headers()['location']).toMatch(/\?auth=error/);
   });
+});
+
+test('sitemap and robots are served for search engines', async ({ request }) => {
+  const sitemap = await request.get('/sitemap.xml');
+  expect(sitemap.status()).toBe(200);
+  const xml = await sitemap.text();
+  for (const path of ['/studio', '/recap', '/privacy']) expect(xml).toContain(path);
+  expect(xml).not.toContain('/gallery');
+
+  const robots = await request.get('/robots.txt');
+  expect(robots.status()).toBe(200);
+  const txt = await robots.text();
+  expect(txt).toMatch(/Disallow: \/api\//);
+  expect(txt).toMatch(/Sitemap: .*\/sitemap\.xml/);
 });

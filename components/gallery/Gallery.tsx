@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, ImageOff, LogIn, Plus, RotateCcw, Trash } from 'lucide-react';
+import { ArrowUpRight, Download, ImageOff, LoaderCircle, LogIn, Plus, RotateCcw, Trash } from 'lucide-react';
+import type { PosterData } from '@/components/canvas/PosterRenderer';
+import { buildRoute } from '@/lib/poster-presets';
+import { OffscreenExport } from '@/components/gallery/OffscreenExport';
 import type { GalleryPoster } from '@/types/gallery';
 import { useAccountStore } from '@/store/useAccountStore';
 import { useGalleryStore } from '@/store/useGalleryStore';
@@ -21,7 +24,15 @@ const RATIO_CSS: Record<GalleryPoster['aspectRatio'], string> = {
   '1:1': '1 / 1',
 };
 
-function PosterCard({ poster }: { poster: GalleryPoster }) {
+function PosterCard({
+  poster,
+  downloading,
+  onDownload,
+}: {
+  poster: GalleryPoster;
+  downloading: boolean;
+  onDownload: (poster: GalleryPoster) => void;
+}) {
   const hydrated = useHydrated();
   const remove = useGalleryStore((s) => s.remove);
   const showNotice = useAccountStore((s) => s.showNotice);
@@ -89,15 +100,28 @@ function PosterCard({ poster }: { poster: GalleryPoster }) {
             </Button>
           </span>
         ) : (
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setConfirming(true)}
-            aria-label={t('Delete “{title}”', { title: poster.title })}
-            className="-mt-1 -mr-2 text-muted opacity-60 group-hover:opacity-100 hover:text-brand focus-visible:opacity-100"
-          >
-            <Trash />
-          </Button>
+          <span className="-mt-1 -mr-2 flex shrink-0 items-center">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onDownload(poster)}
+              disabled={downloading}
+              aria-label={t('Download “{title}”', { title: poster.title })}
+              title={t('Download PNG')}
+              className="text-muted opacity-70 group-hover:opacity-100 hover:text-ink focus-visible:opacity-100"
+            >
+              {downloading ? <LoaderCircle className="animate-spin" /> : <Download />}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setConfirming(true)}
+              aria-label={t('Delete “{title}”', { title: poster.title })}
+              className="text-muted opacity-60 group-hover:opacity-100 hover:text-brand focus-visible:opacity-100"
+            >
+              <Trash />
+            </Button>
+          </span>
         )}
       </div>
     </article>
@@ -143,6 +167,31 @@ export function Gallery() {
   const status = useGalleryStore((s) => s.status);
   const error = useGalleryStore((s) => s.error);
   const load = useGalleryStore((s) => s.load);
+  const fetchDetail = useGalleryStore((s) => s.fetchDetail);
+  const showNotice = useAccountStore((s) => s.showNotice);
+  const [exporting, setExporting] = useState<{ id: string; data: PosterData; filename: string } | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const download = async (poster: GalleryPoster) => {
+    if (downloadingId) return;
+    setDownloadingId(poster.id);
+    const res = await fetchDetail(poster.id);
+    if (!res.ok) {
+      setDownloadingId(null);
+      showNotice({ kind: 'error', text: tr(res.error) });
+      return;
+    }
+    const { recipe } = res.data;
+    setExporting({
+      id: poster.id,
+      filename: `ryannpace-${poster.title || 'poster'}-${recipe.config.aspectRatio.replace(':', 'x')}`,
+      data: {
+        ...buildRoute(recipe.route),
+        metrics: recipe.metrics,
+        config: { ...recipe.config, customOverlayImage: null },
+      },
+    });
+  };
   const t = useT();
 
   useEffect(() => {
@@ -200,7 +249,12 @@ export function Gallery() {
     content = (
       <div className="columns-2 gap-5 sm:columns-3 lg:columns-4 xl:columns-5">
         {posters.map((poster) => (
-          <PosterCard key={poster.id} poster={poster} />
+          <PosterCard
+            key={poster.id}
+            poster={poster}
+            downloading={downloadingId === poster.id}
+            onDownload={(p) => void download(p)}
+          />
         ))}
       </div>
     );
@@ -226,6 +280,18 @@ export function Gallery() {
         </div>
         {content}
       </main>
+      {exporting && (
+        <OffscreenExport
+          key={exporting.id}
+          data={exporting.data}
+          filename={exporting.filename}
+          onDone={(ok) => {
+            setExporting(null);
+            setDownloadingId(null);
+            if (!ok) showNotice({ kind: 'error', text: tr('Export failed. Try 1x resolution or a smaller background photo.') });
+          }}
+        />
+      )}
     </div>
   );
 }

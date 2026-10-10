@@ -45,6 +45,9 @@ export const TEMPLATES: { id: TemplateId; name: string; tagline: string; availab
   { id: 'magazine', name: 'Editorial', tagline: 'Swiss / magazine', available: true },
   { id: 'cyberpunk', name: 'Cyberpunk', tagline: 'OLED neon HUD', available: true },
   { id: 'swiss', name: 'Minimal', tagline: 'Japanese calm', available: true },
+  { id: 'bib', name: 'Race Bib', tagline: 'Marathon number', available: true },
+  { id: 'retro', name: 'Retro Mag', tagline: '80s sports cover', available: true },
+  { id: 'stats', name: 'Stats Card', tagline: 'Data first', available: true },
 ];
 
 /** Editorial / magazine palettes. */
@@ -209,14 +212,149 @@ export const MINIMAL_PALETTES: ColorPalette[] = [
   },
 ];
 
+/** Race bibs: the surface is the bib's background, the card is the bib itself. */
+export const BIB_PALETTES: ColorPalette[] = [
+  {
+    id: 'bib-classic',
+    name: 'Classic',
+    background: '#2B2D31',
+    cardBackground: '#F7F5EF',
+    primaryText: '#111111',
+    secondaryText: '#6B6B6B',
+    accent: '#E4572E',
+    routeColor: '#111111',
+  },
+  {
+    id: 'bib-track',
+    name: 'Track',
+    background: '#B6452C',
+    cardBackground: '#FAF7F0',
+    primaryText: '#141414',
+    secondaryText: '#76706A',
+    accent: '#1F4FBF',
+    routeColor: '#141414',
+  },
+  {
+    id: 'bib-hivis',
+    name: 'Hi-Vis',
+    background: '#0E1116',
+    cardBackground: '#F4F950',
+    primaryText: '#0E1116',
+    secondaryText: '#4A4A2A',
+    accent: '#0E1116',
+    routeColor: '#0E1116',
+  },
+  {
+    id: 'bib-trail',
+    name: 'Trail',
+    background: '#2F3B2C',
+    cardBackground: '#F3F0E6',
+    primaryText: '#1C2419',
+    secondaryText: '#6B7360',
+    accent: '#2F7D4A',
+    routeColor: '#1C2419',
+  },
+];
+
+/** 80s sports-magazine covers: cardBackground is the starburst badge colour. */
+export const RETRO_PALETTES: ColorPalette[] = [
+  {
+    id: 'retro-sunset',
+    name: 'Sunset',
+    background: '#F4E3C3',
+    cardBackground: '#F9C846',
+    primaryText: '#1B1B1B',
+    secondaryText: '#7A5C3A',
+    accent: '#E8442E',
+    routeColor: '#1D4E89',
+  },
+  {
+    id: 'retro-miami',
+    name: 'Miami',
+    background: '#FDE8EF',
+    cardBackground: '#FFD23F',
+    primaryText: '#2B1B3D',
+    secondaryText: '#8C5C8A',
+    accent: '#FF3E7F',
+    routeColor: '#00A6A6',
+  },
+  {
+    id: 'retro-arcade',
+    name: 'Arcade',
+    background: '#1D1B4C',
+    cardBackground: '#FF4F79',
+    primaryText: '#FFF6E5',
+    secondaryText: '#A8A2D8',
+    accent: '#FFB000',
+    routeColor: '#4CE0D2',
+  },
+  {
+    id: 'retro-olympic',
+    name: 'Olympic',
+    background: '#F2F0E9',
+    cardBackground: '#F6AE2D',
+    primaryText: '#0B2545',
+    secondaryText: '#5B6B83',
+    accent: '#D7263D',
+    routeColor: '#0B2545',
+  },
+];
+
+/** Data-first cards: cardBackground is the tile colour. */
+export const STATS_PALETTES: ColorPalette[] = [
+  {
+    id: 'stats-mono',
+    name: 'Mono',
+    background: '#ECECE8',
+    cardBackground: '#FFFFFF',
+    primaryText: '#111111',
+    secondaryText: '#7A7A75',
+    accent: '#2563EB',
+    routeColor: '#111111',
+  },
+  {
+    id: 'stats-midnight',
+    name: 'Midnight',
+    background: '#0B0F14',
+    cardBackground: '#151B24',
+    primaryText: '#F2F4F7',
+    secondaryText: '#7D8794',
+    accent: '#22D3EE',
+    routeColor: '#F2F4F7',
+  },
+  {
+    id: 'stats-mint',
+    name: 'Mint',
+    background: '#DDEFE5',
+    cardBackground: '#FFFFFF',
+    primaryText: '#0F2A1E',
+    secondaryText: '#5C7A6B',
+    accent: '#10B981',
+    routeColor: '#0F2A1E',
+  },
+  {
+    id: 'stats-coral',
+    name: 'Coral',
+    background: '#FBE4DC',
+    cardBackground: '#FFFFFF',
+    primaryText: '#2A1410',
+    secondaryText: '#8C665D',
+    accent: '#F25C3B',
+    routeColor: '#2A1410',
+  },
+];
+
 export const TEMPLATE_PALETTES: Record<TemplateId, ColorPalette[]> = {
   magazine: MAGAZINE_PALETTES,
   cyberpunk: CYBERPUNK_PALETTES,
   swiss: MINIMAL_PALETTES,
+  bib: BIB_PALETTES,
+  retro: RETRO_PALETTES,
+  stats: STATS_PALETTES,
 };
 
 /** Every palette across templates (for lookups by id). */
-export const PALETTES: ColorPalette[] = [...MAGAZINE_PALETTES, ...CYBERPUNK_PALETTES, ...MINIMAL_PALETTES];
+export const PALETTES: ColorPalette[] = Object.values(TEMPLATE_PALETTES).flat();
 
 export function contrastModeFor(palette: ColorPalette): 'dark' | 'light' {
   return relativeLuminance(palette.background) < 0.35 ? 'dark' : 'light';

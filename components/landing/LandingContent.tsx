@@ -35,8 +35,8 @@ const FEATURES = [
   },
   {
     icon: Layers,
-    title: 'Three looks, three formats',
-    body: 'Editorial magazine, neon Cyberpunk or calm Japanese Minimal, in 9:16, 4:5 and 1:1.',
+    title: 'Six looks, three formats',
+    body: 'Editorial, neon Cyberpunk, Japanese Minimal, race-day Bib, 80s Retro Mag or a clean Stats Card, in 9:16, 4:5 and 1:1.',
   },
   {
     icon: FileUp,
@@ -161,7 +161,7 @@ export function LandingContent() {
               </div>
               <p className="max-w-sm text-sm text-ink-soft">
                 {t(
-                  'Three templates (Editorial, Cyberpunk and Minimal), three formats and fourteen palettes. Switch instantly; the layout re-flows itself.'
+                  'Six templates (Editorial, Cyberpunk, Minimal, Race Bib, Retro Mag and Stats Card), three formats and twenty-six palettes. Switch instantly; the layout re-flows itself.'
                 )}
               </p>
             </div>

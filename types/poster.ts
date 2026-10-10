@@ -1,6 +1,6 @@
 export type AspectRatio = '9:16' | '1:1' | '4:5';
 
-export type TemplateId = 'magazine' | 'cyberpunk' | 'swiss';
+export type TemplateId = 'magazine' | 'cyberpunk' | 'swiss' | 'bib' | 'retro' | 'stats';
 
 /** Display units. Metrics are always stored in metric; `mi` also shows elevation in feet. */
 export type DistanceUnit = 'km' | 'mi';

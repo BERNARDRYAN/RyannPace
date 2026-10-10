@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Images, LogIn, LogOut } from 'lucide-react';
+import { ChevronDown, Images, LogIn, LogOut, UserX } from 'lucide-react';
+import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog';
 import { useShallow } from 'zustand/react/shallow';
 import { useAccountStore } from '@/store/useAccountStore';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ export function AccountMenu() {
     useShallow((s) => ({ status: s.status, user: s.user, openSignIn: s.openSignIn, signOut: s.signOut }))
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -84,8 +86,21 @@ export function AccountMenu() {
           >
             <LogOut className="size-4" /> {t('Sign out')}
           </button>
+          <div className="my-1 h-px bg-line" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setMenuOpen(false);
+              setDeleteOpen(true);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-brand hover:bg-brand-soft/60"
+          >
+            <UserX className="size-4" /> {t('Delete account')}
+          </button>
         </div>
       )}
+      <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
     </div>
   );
 }

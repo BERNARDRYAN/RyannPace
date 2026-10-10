@@ -11,6 +11,9 @@ import { trimRouteEnds } from '@/lib/privacy';
 import { MagazineTemplate } from '@/components/canvas/templates/MagazineTemplate';
 import { CyberpunkTemplate } from '@/components/canvas/templates/CyberpunkTemplate';
 import { MinimalTemplate } from '@/components/canvas/templates/MinimalTemplate';
+import { BibTemplate } from '@/components/canvas/templates/BibTemplate';
+import { RetroTemplate } from '@/components/canvas/templates/RetroTemplate';
+import { StatsTemplate } from '@/components/canvas/templates/StatsTemplate';
 
 /** Everything a template needs to draw one poster. */
 export interface PosterData {
@@ -25,6 +28,9 @@ const TEMPLATE_COMPONENTS: Record<TemplateId, ComponentType<PosterData>> = {
   magazine: MagazineTemplate,
   cyberpunk: CyberpunkTemplate,
   swiss: MinimalTemplate,
+  bib: BibTemplate,
+  retro: RetroTemplate,
+  stats: StatsTemplate,
 };
 
 /**

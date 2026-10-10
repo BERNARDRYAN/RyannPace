@@ -136,4 +136,49 @@ export const SHOWCASE = {
       activityTitle: 'Night Shift Intervals',
     }
   ),
+  bib: makePoster(
+    'bib',
+    'bib-classic',
+    '9:16',
+    { lat: 3.1579, lon: 101.7116, size: 0.02, lobes: 4, twist: 1.4, sweep: 0.95 },
+    {
+      distanceKm: 42.2,
+      durationSeconds: 3 * 3600 + 41 * 60 + 12,
+      elevationGainMeters: 210,
+      heartRateAvg: 161,
+      date: '2026-10-04T22:30:00.000Z',
+      locationName: 'Kuala Lumpur',
+      activityTitle: 'KL Marathon',
+    }
+  ),
+  retro: makePoster(
+    'retro',
+    'retro-sunset',
+    '4:5',
+    { lat: 5.4164, lon: 100.3327, size: 0.012, lobes: 3, twist: 2.1 },
+    {
+      distanceKm: 15.3,
+      durationSeconds: 79 * 60 + 40,
+      elevationGainMeters: 96,
+      heartRateAvg: 155,
+      date: '2026-09-27T23:00:00.000Z',
+      locationName: 'George Town, Penang',
+      activityTitle: 'Sunrise Tempo',
+    }
+  ),
+  stats: makePoster(
+    'stats',
+    'stats-mono',
+    '1:1',
+    { lat: 1.3521, lon: 103.8198, size: 0.009, lobes: 2, twist: 0.9 },
+    {
+      distanceKm: 10.02,
+      durationSeconds: 47 * 60 + 36,
+      elevationGainMeters: 42,
+      heartRateAvg: 158,
+      date: '2026-10-04T22:42:00.000Z',
+      locationName: 'Bishan, Singapore',
+      activityTitle: 'Easy Ten',
+    }
+  ),
 } satisfies Record<string, PosterData>;

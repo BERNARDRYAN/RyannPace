@@ -8,10 +8,12 @@ interface SplitsChartProps {
   height: number;
   /** Bar width as a share of each slot; Minimal uses slim bars. */
   barRatio?: number;
+  /** Stretch to fill the parent box (width/height then only set the drawing grid). */
+  fluid?: boolean;
 }
 
 /** One bar per km/mile, taller = faster, the fastest split in the highlight color. */
-export function SplitsChart({ splits, color, highlight, width, height, barRatio = 0.62 }: SplitsChartProps) {
+export function SplitsChart({ splits, color, highlight, width, height, barRatio = 0.62, fluid }: SplitsChartProps) {
   if (splits.length < 2) return null;
   const speeds = splits.map((s) => 1 / s);
   const min = Math.min(...speeds);
@@ -22,7 +24,13 @@ export function SplitsChart({ splits, color, highlight, width, height, barRatio 
   const barWidth = Math.max(2, slot * barRatio);
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-label="Splits">
+    <svg
+      width={fluid ? '100%' : width}
+      height={fluid ? '100%' : height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio={fluid ? 'none' : undefined}
+      aria-label="Splits"
+    >
       {speeds.map((v, i) => {
         const h = height * (0.22 + 0.78 * ((v - min) / range));
         return (

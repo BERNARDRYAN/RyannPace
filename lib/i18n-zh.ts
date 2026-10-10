@@ -195,6 +195,18 @@ export const ZH: Record<string, string> = {
   'Opened “{title}” from your gallery.': '已从作品集打开“{title}”。',
   'Sign in to open posters from your gallery.': '登录后即可打开作品集中的海报。',
 
+  // ---------- Account deletion ----------
+  'Delete account': '删除账号',
+  'Delete your account?': '确定删除你的账号？',
+  'This permanently deletes your account, saved presets and every poster in your gallery. This cannot be undone.':
+    '这将永久删除你的账号、已存预设以及作品集中的所有海报，且无法恢复。',
+  'Type DELETE to confirm': '输入 DELETE 以确认',
+  Cancel: '取消',
+  'Type DELETE to confirm.': '请输入 DELETE 以确认。',
+  'Your account and all its data were deleted.': '你的账号及所有数据已删除。',
+  'Could not delete your account. Please try again.': '无法删除账号，请重试。',
+  'Account deletion is not set up on this server yet.': '此服务器尚未开启账号删除功能。',
+
   // ---------- Strava ----------
   'Connect with Strava': '连接 Strava',
   'Import from Strava': '从 Strava 导入',
@@ -235,6 +247,8 @@ export const ZH: Record<string, string> = {
   '{n} poster · click one to reopen it in the studio': '{n} 张海报 · 点击即可在工作室中重新打开',
   '{n} posters · click one to reopen it in the studio': '{n} 张海报 · 点击即可在工作室中重新打开',
   'Open in studio': '在工作室中打开',
+  'Download “{title}”': '下载“{title}”',
+  'Download PNG': '下载 PNG',
   'Open “{title}” in the studio': '在工作室中打开“{title}”',
   'Delete “{title}”': '删除“{title}”',
   'Preview unavailable': '预览不可用',
@@ -269,6 +283,35 @@ export const ZH: Record<string, string> = {
   '{file}: no GPS track (indoor activity?).': '{file}：没有 GPS 轨迹（室内运动？）。',
   'Only {max} runs fit on one recap; extra files were skipped.': '一张总结最多容纳 {max} 次跑步，多余的文件已跳过。',
   'My Runs': '我的跑步',
+
+  // ---------- New templates ----------
+  'Race Bib': '号码布',
+  'Marathon number': '马拉松号码布',
+  'Retro Mag': '复古杂志',
+  '80s sports cover': '80 年代运动封面',
+  'Stats Card': '数据卡片',
+  'Data first': '数据优先',
+  Classic: '经典',
+  Track: '跑道红',
+  'Hi-Vis': '荧光黄',
+  Trail: '越野绿',
+  Sunset: '日落',
+  Miami: '迈阿密',
+  Arcade: '街机',
+  Olympic: '奥运',
+  Mono: '黑白',
+  Midnight: '午夜',
+  Mint: '薄荷',
+  Coral: '珊瑚',
+  Run: '跑',
+  'Bib No.': '号码',
+  Finisher: '完赛',
+  Pace: '配速',
+  'The Running Magazine': '跑步杂志',
+  'Issue No. {n}': '第 {n} 期',
+  Free: '免费',
+  'Special issue': '特别版',
+  Avg: '平均',
 
   // ---------- Posters ----------
   'RyannPace Editorial': 'RyannPace 特刊',
@@ -330,20 +373,20 @@ export const ZH: Record<string, string> = {
   'Made for': '为',
   every: '每一种',
   'feed.': '版面而生。',
-  'Three templates (Editorial, Cyberpunk and Minimal), three formats and fourteen palettes. Switch instantly; the layout re-flows itself.':
-    '三种模板（杂志、赛博朋克、极简）、三种尺寸、十四套配色。一键切换，版式自动重排。',
-  'Cyberpunk · Stories & Reels': '赛博朋克 · 快拍与短视频',
-  'Minimal · portrait feed': '极简 · 竖版动态',
-  'Editorial · square feed': '杂志 · 方图动态',
+  'Six templates (Editorial, Cyberpunk, Minimal, Race Bib, Retro Mag and Stats Card), three formats and twenty-six palettes. Switch instantly; the layout re-flows itself.':
+    '六种模板（杂志、赛博朋克、极简、号码布、复古杂志、数据卡片）、三种尺寸、二十六套配色。一键切换，版式自动重排。',
+  'Race Bib · Stories & Reels': '号码布 · 快拍与短视频',
+  'Retro Mag · portrait feed': '复古杂志 · 竖版动态',
+  'Stats Card · square feed': '数据卡片 · 方图动态',
   'Why RyannPace': '为什么选择 RyannPace',
   'Designed like print.': '像印刷品一样设计。',
   'Built for runners.': '为跑者而生。',
   'Private by design': '隐私优先',
   'Files are read on your device, never uploaded. A privacy zone hides where your runs start and end.':
     '文件只在本机读取，绝不上传。隐私区域会隐藏你跑步的起点和终点。',
-  'Three looks, three formats': '三种风格，三种尺寸',
-  'Editorial magazine, neon Cyberpunk or calm Japanese Minimal, in 9:16, 4:5 and 1:1.':
-    '杂志风、霓虹赛博朋克或静谧的日式极简，支持 9:16、4:5 与 1:1。',
+  'Six looks, three formats': '六种风格，三种尺寸',
+  'Editorial, neon Cyberpunk, Japanese Minimal, race-day Bib, 80s Retro Mag or a clean Stats Card, in 9:16, 4:5 and 1:1.':
+    '杂志风、霓虹赛博朋克、日式极简、比赛号码布、80 年代复古杂志或简洁数据卡片，支持 9:16、4:5 与 1:1。',
   'Works with your watch': '兼容你的手表',
   'GPX, FIT and TCX from Garmin, Coros, Suunto, Apple Watch and Strava. Kilometres or miles.':
     '支持佳明、高驰、颂拓、Apple Watch 和 Strava 的 GPX、FIT、TCX 文件。公里或英里皆可。',

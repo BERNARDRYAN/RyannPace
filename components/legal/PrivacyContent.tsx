@@ -66,7 +66,8 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
         title: 'Your choices and rights',
         items: [
           'Delete any poster or preset at any time from the app.',
-          `To delete your account and all its data, or to ask what data we hold about you, email ${CONTACT} from the address you sign in with. We will act on requests within 30 days.`,
+          'Delete your account and all its data yourself at any time: account menu → Delete account. It takes effect immediately.',
+          `To ask what data we hold about you, or for help, email ${CONTACT} from the address you sign in with. We will reply within 30 days.`,
           'You have rights under applicable data protection laws, including Malaysia’s Personal Data Protection Act 2010, such as access to and correction of your personal data.',
         ],
       },
@@ -147,7 +148,8 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
         title: '你的选择与权利',
         items: [
           '你可以随时在应用中删除任何海报或预设。',
-          `如需删除账号及其全部数据，或查询我们持有的关于你的数据，请用你登录的邮箱发送邮件至 ${CONTACT}。我们会在 30 天内处理。`,
+          '你可以随时自行删除账号及其全部数据：账号菜单 → 删除账号，立即生效。',
+          `如需查询我们持有的关于你的数据或需要帮助，请用你登录的邮箱发送邮件至 ${CONTACT}。我们会在 30 天内回复。`,
           '你享有适用数据保护法律赋予的权利，包括马来西亚《2010 年个人数据保护法》（PDPA），例如查阅和更正你的个人数据。',
         ],
       },

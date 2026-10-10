@@ -1,6 +1,6 @@
 import type { AspectRatio, ColorPalette, PosterConfig, TemplateId } from '@/types/poster';
 
-const TEMPLATE_IDS: readonly TemplateId[] = ['magazine', 'cyberpunk', 'swiss'];
+const TEMPLATE_IDS: readonly TemplateId[] = ['magazine', 'cyberpunk', 'swiss', 'bib', 'retro', 'stats'];
 const ASPECT_RATIOS: readonly AspectRatio[] = ['9:16', '1:1', '4:5'];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
