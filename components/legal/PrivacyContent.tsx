@@ -18,7 +18,7 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
     title: 'Privacy Policy',
     updated: 'Last updated',
     intro:
-      'RyannPace is a free personal project run by Bernard Sim in Malaysia. This page explains, in plain language, what data RyannPace handles, why, and what you can do about it.',
+      'RyannPace is a free personal project run by Bernard Ryan Sim in Malaysia. This page explains, in plain language, what data RyannPace handles, why, and what you can do about it.',
     sections: [
       {
         title: 'The short version',
@@ -99,7 +99,7 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
     title: '隐私政策',
     updated: '最后更新',
     intro:
-      'RyannPace 是由马来西亚的 Bernard Sim 运营的免费个人项目。本页用通俗的语言说明 RyannPace 会处理哪些数据、为什么处理，以及你可以如何管理这些数据。',
+      'RyannPace 是由马来西亚的 Bernard Ryan Sim 运营的免费个人项目。本页用通俗的语言说明 RyannPace 会处理哪些数据、为什么处理，以及你可以如何管理这些数据。',
     sections: [
       {
         title: '简要说明',
