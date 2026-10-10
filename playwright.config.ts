@@ -1,14 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * End-to-end tests run against a production build by default (CI).
- * Locally you can point them at a running dev server instead:
- *   E2E_BASE_URL=http://localhost:3000 npm run test:e2e
+ * End-to-end tests. In CI they run against a production build; locally they
+ * use the dev server on :3000 (starting it if needed) and never build, because
+ * a production build writes into the same .next folder and breaks a running
+ * dev server. Point them anywhere else with E2E_BASE_URL=https://... .
  * Locally they drive the installed Microsoft Edge, so no browser download is needed.
  */
 const externalBaseUrl = process.env.E2E_BASE_URL;
-const baseURL = externalBaseUrl ?? 'http://localhost:3100';
 const isCI = !!process.env.CI;
+const baseURL = externalBaseUrl ?? (isCI ? 'http://localhost:3100' : 'http://localhost:3000');
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -28,7 +29,7 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: 'npm run build && npm run start -- -p 3100',
+        command: isCI ? 'npm run build && npm run start -- -p 3100' : 'npm run dev',
         url: baseURL,
         timeout: 300_000,
         reuseExistingServer: !isCI,

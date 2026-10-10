@@ -35,10 +35,10 @@ export function SiteHeader() {
   const t = useT();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-line bg-panel/90 px-4 backdrop-blur sm:px-6">
-      <Link href="/" className="flex items-center gap-2.5" aria-label="RyannPace home">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line bg-panel/90 px-4 backdrop-blur sm:px-6">
+      <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="RyannPace home">
         <LogoMark size={36} />
-        <Wordmark className="hidden text-lg text-ink min-[400px]:inline [&>span]:text-xl" />
+        <Wordmark className="hidden text-lg text-ink min-[500px]:inline [&>span]:text-xl" />
       </Link>
 
       <div className="flex items-center gap-1.5 sm:gap-4">
