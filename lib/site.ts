@@ -2,6 +2,12 @@
 export const PRODUCTION_URL = 'https://ryannpace.ryannpace-app.workers.dev';
 
 /**
+ * Cloudflare Web Analytics beacon token. Public by design: it appears in every
+ * visitor's page source. NEXT_PUBLIC_CF_ANALYTICS_TOKEN overrides it.
+ */
+export const CF_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN || '0de0466e53224f048b6bc933f0d853b8';
+
+/**
  * Absolute base URL for metadata (link previews, Open Graph images).
  * SITE_URL wins when set; production builds default to the live address;
  * development uses localhost.

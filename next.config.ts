@@ -1,9 +1,10 @@
 import type { NextConfig } from 'next';
+import { CF_ANALYTICS_TOKEN } from './lib/site';
 
 const isDev = process.env.NODE_ENV !== 'production';
 // Optional Cloudflare services, allowed in the policy only when configured.
 const turnstile = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-const webAnalytics = !!process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN;
+const webAnalytics = !!CF_ANALYTICS_TOKEN;
 
 /**
  * Content-Security-Policy, scoped to what the app actually loads:
