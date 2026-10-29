@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
 import { siteUrl } from '@/lib/site';
 import { AnalyticsBeacon } from '@/components/AnalyticsBeacon';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { AccountProvider } from '@/components/account/AccountProvider';
 
 import './globals.css';
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <AccountProvider />
         <AnalyticsBeacon />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

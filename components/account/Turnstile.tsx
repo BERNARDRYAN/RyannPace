@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 declare global {
   interface Window {
@@ -46,7 +46,9 @@ export function Turnstile({ onToken, resetKey, language }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
-  onTokenRef.current = onToken;
+  useLayoutEffect(() => {
+    onTokenRef.current = onToken;
+  });
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY || !containerRef.current) return;

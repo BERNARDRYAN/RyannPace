@@ -199,8 +199,14 @@ export function StravaImport() {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+    void getJson<Status>('/api/strava/status').then((res) => {
+      if (!cancelled) setStatus(res.ok ? res.data : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!status?.configured) return null;
 

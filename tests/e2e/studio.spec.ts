@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { decodeQr, exportPng, fixture, openStudio, pngSize, posterText, uploadActivity, watchProblems } from './helpers';
 
@@ -94,6 +95,86 @@ test.describe('Studio', () => {
     await expect(page.locator('[data-poster-root] img[src^="data:image"]')).toBeVisible();
     const withPhoto = await exportPng(page);
     expect(pngSize(withPhoto)).toEqual({ width: 1080, height: 1920 });
+  });
+
+  test('the poster survives a reload', async ({ page }) => {
+    await uploadActivity(page, 'test-run.gpx');
+    await page.getByRole('button', { name: /Race Bib/ }).click();
+    await page.locator('#metric-title').fill('Sunday Long Run');
+    await page.waitForTimeout(1000); // autosave is debounced
+    await page.reload();
+    await expect(page.getByText('Picked up where you left off.')).toBeVisible();
+    await expect(page.getByText('test-run.gpx')).toBeVisible();
+    await expect(page.locator('#metric-title')).toHaveValue('Sunday Long Run');
+    await expect(page.getByRole('button', { name: /Race Bib/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('Surprise me switches to another template', async ({ page }) => {
+    const pressed = page.locator('button[aria-pressed=true]', { hasText: /Editorial|Cyberpunk|Minimal|Race Bib|Retro Mag|Stats Card/ });
+    const before = await pressed.innerText();
+    await page.getByRole('button', { name: 'Surprise me' }).click();
+    await expect(pressed).not.toHaveText(before);
+  });
+
+  test('a file shared to the installed app opens on the device', async ({ page }) => {
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    const gpx = readFileSync(fixture('test-run.gpx'), 'utf8');
+    // What Android's share sheet does: POST the file to the manifest's share_target.
+    const landedOn = await page.evaluate(async (text) => {
+      const form = new FormData();
+      form.append('activity', new File([text], 'shared-run'));
+      const res = await fetch('/share-target', { method: 'POST', body: form });
+      return new URL(res.url).pathname + new URL(res.url).search;
+    }, gpx);
+    expect(landedOn).toBe('/studio?shared=1');
+    await page.goto(landedOn);
+    // The extension was missing, so it is sniffed from the contents.
+    await expect(page.getByText('shared-run.gpx')).toBeVisible();
+    await expect(page.locator('#metric-title')).toHaveValue('Bishan Park Easy Run');
+    expect(new URL(page.url()).search).toBe('');
+  });
+
+  test('undo and redo design changes, by button and keyboard', async ({ page }) => {
+    const bib = page.getByRole('button', { name: /Race Bib/ });
+    const editorial = page.getByRole('button', { name: /Editorial/ });
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    await bib.click();
+    await expect(bib).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(editorial).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Control+Shift+Z');
+    await expect(bib).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Control+Z');
+    await expect(editorial).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
+  });
+
+  test('route video exports a playable 1080p MP4', async ({ page }) => {
+    await uploadActivity(page, 'test-run.gpx');
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Route video' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(/\.mp4$/);
+    const mp4 = readFileSync((await file.path())!);
+    expect(mp4.subarray(4, 8).toString()).toBe('ftyp');
+    // Decode it in a blank page: the app's CSP (rightly) has no media-src for blobs.
+    const player = await page.context().newPage();
+    const video = await player.evaluate(async (b64) => {
+      const el = document.createElement('video');
+      el.muted = true;
+      el.src = URL.createObjectURL(new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], { type: 'video/mp4' }));
+      await new Promise((resolve, reject) => {
+        el.onloadedmetadata = resolve;
+        el.onerror = () => reject(new Error(`video error ${el.error?.code}`));
+      });
+      return { width: el.videoWidth, height: el.videoHeight, duration: el.duration };
+    }, mp4.toString('base64'));
+    await player.close();
+    expect(video.width).toBe(1080);
+    expect(video.height).toBe(1920);
+    expect(video.duration).toBeGreaterThan(4);
   });
 });
 

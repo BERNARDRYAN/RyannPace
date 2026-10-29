@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, Palette, SlidersHorizontal, Upload } from 'lucide-react';
+import { Download, Palette, Redo2, SlidersHorizontal, Undo2, Upload } from 'lucide-react';
 import { currentRecipe, usePosterStore } from '@/store/usePosterStore';
 import { useAccountStore } from '@/store/useAccountStore';
 import { useGalleryStore } from '@/store/useGalleryStore';
@@ -12,7 +12,7 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { PosterBoard } from '@/components/canvas/PosterBoard';
 import { ControlSection } from '@/components/controls/ControlSection';
 import { FileUploader } from '@/components/controls/FileUploader';
-import { TemplateSelector } from '@/components/controls/TemplateSelector';
+import { SurpriseButton, TemplateSelector } from '@/components/controls/TemplateSelector';
 import { AspectRatioPicker } from '@/components/controls/AspectRatioPicker';
 import { PaletteSelector } from '@/components/controls/PaletteSelector';
 import { DisplayOptions } from '@/components/controls/DisplayOptions';
@@ -20,6 +20,8 @@ import { MetricsForm } from '@/components/controls/MetricsForm';
 import { ExportPanel } from '@/components/controls/ExportPanel';
 import { PresetsPanel } from '@/components/controls/PresetsPanel';
 import { StravaImport } from '@/components/controls/StravaImport';
+import { autosaveDraft, restoreDraft } from '@/lib/studio-draft';
+import { clearHistory, redo, trackHistory, undo, useHistoryStore } from '@/lib/poster-history';
 import { useT } from '@/store/useLocaleStore';
 import { tr } from '@/store/useLocaleStore';
 
@@ -41,6 +43,110 @@ function useStravaRedirectNotice() {
     window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     const notice = STRAVA_RESULTS[result];
     if (notice) useAccountStore.getState().showNotice(notice);
+  }, []);
+}
+
+/**
+ * Brings back the poster from the last visit and keeps saving it. Runs before the
+ * gallery/share hooks so an explicitly opened poster or shared file wins.
+ */
+function useStudioDraft() {
+  useEffect(() => {
+    const params = new URL(window.location.href).searchParams;
+    const restored = restoreDraft();
+    if (restored === 'route' && !params.has('poster') && !params.has('shared')) {
+      useAccountStore.getState().showNotice({ kind: 'success', text: 'Picked up where you left off.' });
+    }
+    const stopSaving = autosaveDraft();
+    // Start undo history after the restore, so undo never jumps back to the sample poster.
+    const stopHistory = trackHistory();
+    return () => {
+      stopSaving();
+      stopHistory();
+      clearHistory();
+    };
+  }, []);
+}
+
+/** Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z or Ctrl+Y redoes; text fields keep their own undo. */
+function useUndoShortcuts() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) undo();
+      else if ((key === 'z' && e.shiftKey) || key === 'y') redo();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+}
+
+function UndoRedo() {
+  const canUndo = useHistoryStore((s) => s.canUndo);
+  const canRedo = useHistoryStore((s) => s.canRedo);
+  const t = useT();
+  const buttonClass =
+    'flex size-7 items-center justify-center rounded-full text-ink transition-colors hover:bg-black/5 disabled:text-muted/40 disabled:hover:bg-transparent';
+  return (
+    <span className="flex shrink-0 items-center">
+      <button type="button" onClick={undo} disabled={!canUndo} aria-label={t('Undo')} title={t('Undo')} className={buttonClass}>
+        <Undo2 className="size-4" />
+      </button>
+      <button type="button" onClick={redo} disabled={!canRedo} aria-label={t('Redo')} title={t('Redo')} className={buttonClass}>
+        <Redo2 className="size-4" />
+      </button>
+    </span>
+  );
+}
+
+const ACTIVITY_EXTENSION = /\.(gpx|fit|tcx)$/i;
+
+/** Share sheets sometimes drop the extension; sniff the contents to restore it. */
+async function withActivityExtension(blob: Blob, name: string): Promise<File> {
+  if (ACTIVITY_EXTENSION.test(name)) return new File([blob], name);
+  const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
+  const isFit = head.length >= 12 && String.fromCharCode(head[8], head[9], head[10], head[11]) === '.FIT';
+  const text = new TextDecoder().decode(head);
+  const ext = isFit ? '.fit' : text.includes('TrainingCenterDatabase') ? '.tcx' : '.gpx';
+  return new File([blob], `${name || 'activity'}${ext}`);
+}
+
+/** Loads a file shared to the installed app (public/sw.js parks it, then opens ?shared=…). */
+function useSharedActivityFile() {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const shared = url.searchParams.get('shared');
+    if (!shared) return;
+    url.searchParams.delete('shared');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+
+    const { showNotice } = useAccountStore.getState();
+    const failed = () =>
+      showNotice({ kind: 'error', text: 'Could not open the shared file. Choose it in the Route panel instead.' });
+    if (shared !== '1' || !('caches' in window)) {
+      failed();
+      return;
+    }
+    void (async () => {
+      try {
+        const cache = await caches.open('rp-shared-file');
+        const res = await cache.match('/__shared-activity');
+        if (!res) return failed();
+        await cache.delete('/__shared-activity');
+        const name = decodeURIComponent(res.headers.get('X-File-Name') ?? 'activity');
+        await usePosterStore.getState().loadActivityFile(await withActivityExtension(await res.blob(), name));
+        // On phones the Route panel (where parse errors normally show) is closed.
+        const { gpxStatus, gpxError } = usePosterStore.getState();
+        if (gpxStatus === 'error' && gpxError) showNotice({ kind: 'error', text: gpxError });
+      } catch {
+        failed();
+      }
+    })();
   }, []);
 }
 
@@ -89,7 +195,8 @@ function PreviewMeta() {
         <span className="size-1.5 animate-pulse rounded-full bg-brand" />
         {t('Live preview')}
       </span>
-      <span className="truncate">
+      <UndoRedo />
+      <span className="ml-auto truncate">
         {templateName} · {t(paletteName)} · {aspectRatio}
         <span className="hidden sm:inline">
           {' '}
@@ -121,7 +228,7 @@ function RouteControls() {
 function StyleControls() {
   return (
     <div id="design" className="scroll-mt-20">
-      <ControlSection index="03" title="Template">
+      <ControlSection index="03" title="Template" action={<SurpriseButton />}>
         <TemplateSelector />
       </ControlSection>
       <ControlSection index="04" title="Format">
@@ -268,6 +375,9 @@ function MobileStudio() {
 }
 
 export function Studio() {
+  useStudioDraft();
+  useUndoShortcuts();
+  useSharedActivityFile();
   useOpenGalleryPoster();
   useStravaRedirectNotice();
   // Desktop is the server/hydration default; phones switch right after hydration.

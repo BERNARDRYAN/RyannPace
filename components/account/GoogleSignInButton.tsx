@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GOOGLE_CLIENT_ID } from '@/lib/site';
 
 interface GoogleIdApi {
@@ -51,7 +51,9 @@ interface GoogleSignInButtonProps {
 export function GoogleSignInButton({ onSignedIn, onError, onUnavailable, locale }: GoogleSignInButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const callbacks = useRef({ onSignedIn, onError, onUnavailable });
-  callbacks.current = { onSignedIn, onError, onUnavailable };
+  useLayoutEffect(() => {
+    callbacks.current = { onSignedIn, onError, onUnavailable };
+  });
   // Nonces are single-use; bumping this re-initializes with a fresh one after a failure.
   const [attempt, setAttempt] = useState(0);
 

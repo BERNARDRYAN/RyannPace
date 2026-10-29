@@ -59,7 +59,7 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
       {
         title: 'Cookies and local storage',
         paragraphs: [
-          'We use only what the site needs to work: a secure sign-in session cookie (when you sign in) and your language choice saved in your browser. There are no advertising or tracking cookies.',
+          'We use only what the site needs to work: a secure sign-in session cookie (when you sign in), plus your language choice and the poster you are working on, saved only in your browser so it is still there next time. There are no advertising or tracking cookies.',
         ],
       },
       {
@@ -141,7 +141,7 @@ const CONTENT: Record<'en' | 'zh', { title: string; intro: string; updated: stri
       {
         title: 'Cookie 与本地存储',
         paragraphs: [
-          '我们只使用网站运行所必需的内容：登录时的安全会话 Cookie，以及保存在浏览器中的语言选择。没有广告或追踪 Cookie。',
+          '我们只使用网站运行所必需的内容：登录时的安全会话 Cookie，以及只保存在你浏览器中的语言选择和正在编辑的海报，方便你下次继续。没有广告或追踪 Cookie。',
         ],
       },
       {

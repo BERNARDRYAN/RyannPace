@@ -1,12 +1,44 @@
 'use client';
 
 import { useRef, useState, type DragEvent } from 'react';
-import { CircleAlert, FileCheck, LoaderCircle, RotateCcw, Upload, X } from 'lucide-react';
+import { ChevronDown, CircleAlert, CircleHelp, FileCheck, LoaderCircle, RotateCcw, Upload, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePosterStore } from '@/store/usePosterStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/store/useLocaleStore';
+
+const EXPORT_GUIDES = [
+  { source: 'Garmin', steps: 'On connect.garmin.com, open the activity → ⚙ gear icon → Export Original (.fit) or Export to GPX.' },
+  { source: 'Strava', steps: 'On strava.com in a browser, open your activity → ⋯ menu → Export GPX.' },
+  { source: 'COROS', steps: 'In the COROS app, open the activity → share icon → Export data → .fit or .gpx.' },
+  { source: 'Polar', steps: 'On flow.polar.com, open the training session → ⋯ → Export session → GPX or TCX.' },
+  { source: 'Apple Watch', steps: 'Let the free Strava app sync your workout, then export it from strava.com as above.' },
+];
+
+/** Many first-time visitors don't know where their watch keeps the file. */
+function ExportGuide() {
+  const t = useT();
+  return (
+    <details className="group rounded-lg border border-line bg-white text-xs">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2.5 font-medium text-ink [&::-webkit-details-marker]:hidden">
+        <CircleHelp className="size-3.5 text-muted" />
+        {t('Where do I find my activity file?')}
+        <ChevronDown className="ml-auto size-3.5 text-muted transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-2.5 border-t border-line px-3 py-3 text-ink-soft">
+        {EXPORT_GUIDES.map(({ source, steps }) => (
+          <p key={source}>
+            <span className="font-semibold text-ink">{t(source)}</span> · {t(steps)}
+          </p>
+        ))}
+        <p className="text-muted">
+          {t('On Android, install RyannPace (browser menu → Add to Home screen) and you can share a file straight into it from your Files app.')}
+        </p>
+      </div>
+    </details>
+  );
+}
 
 export function FileUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +168,8 @@ export function FileUploader() {
           </Button>
         )}
       </div>
+
+      <ExportGuide />
     </div>
   );
 }

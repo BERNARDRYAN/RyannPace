@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 import type { AspectRatio } from '@/types/poster';
-import { Check, CircleAlert, Download, LoaderCircle, Share2 } from 'lucide-react';
+import { Check, CircleAlert, Clapperboard, Download, LoaderCircle, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { currentRecipe, usePosterStore } from '@/store/usePosterStore';
 import { useAccountStore } from '@/store/useAccountStore';
@@ -11,6 +11,7 @@ import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
 import {
   canShareFiles,
   createThumbnail,
+  deliverVideo,
   exportPosterAsPng,
   sharePoster,
   type ExportPixelRatio,
@@ -41,6 +42,22 @@ async function saveToGallery(png: Blob) {
   }
 }
 
+/** Whether this browser can encode the route video at the poster's size (checked lazily). */
+function useVideoSupported(width: number, height: number) {
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void import('@/lib/route-video')
+      .then(({ canMakeRouteVideo }) => canMakeRouteVideo(width, height))
+      .then((ok) => !cancelled && setSupported(ok))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [width, height]);
+  return supported;
+}
+
 interface ExportPanelProps {
   posterRef: RefObject<HTMLDivElement | null>;
   /** Overrides for non-studio posters (the recap); default to the studio poster. */
@@ -59,6 +76,7 @@ export function ExportPanel({
   const [pixelRatio, setPixelRatio] = useState<ExportPixelRatio>(2);
   const [state, setState] = useState<ExportState>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
   const shareSupported = useSyncExternalStore(noopSubscribe, canShareFiles, () => false);
   const accountStatus = useAccountStore((s) => s.status);
   const openSignIn = useAccountStore((s) => s.openSignIn);
@@ -72,7 +90,32 @@ export function ExportPanel({
   const archive = (blob: Blob) => {
     if (saveToGalleryOnExport) void saveToGallery(blob);
   };
-  const busy = state === 'rendering';
+  const videoSupported = useVideoSupported(width, height);
+  const busy = state === 'rendering' || videoProgress !== null;
+
+  const makeVideo = async () => {
+    const node = posterRef.current;
+    if (!node || busy) return;
+    setVideoProgress(0);
+    setMessage(null);
+    try {
+      const { renderRouteVideo } = await import('@/lib/route-video');
+      const blob = await renderRouteVideo(node, (f) => setVideoProgress(f));
+      const delivered = await deliverVideo(blob, filename);
+      setState(delivered === 'cancelled' ? 'idle' : 'done');
+      if (delivered === 'downloaded') setMessage('Video saved. Post it to your Instagram or WhatsApp story.');
+    } catch (error) {
+      console.error('RyannPace video failed:', error);
+      setState('error');
+      setMessage(
+        error instanceof Error && error.message === 'Turn on the route to make a video.'
+          ? error.message
+          : 'The video could not be made in this browser. Try the PNG instead.'
+      );
+    } finally {
+      setVideoProgress(null);
+    }
+  };
 
   const run = async (action: 'download' | 'share') => {
     const node = posterRef.current;
@@ -129,13 +172,22 @@ export function ExportPanel({
         </div>
 
         <Button onClick={() => run('download')} disabled={busy} className="min-w-[150px]">
-          {busy ? <LoaderCircle className="animate-spin" /> : state === 'done' ? <Check /> : <Download />}
-          {busy ? t('Rendering…') : t('Export PNG')}
+          {state === 'rendering' ? <LoaderCircle className="animate-spin" /> : state === 'done' ? <Check /> : <Download />}
+          {state === 'rendering' ? t('Rendering…') : t('Export PNG')}
         </Button>
 
         {shareSupported && (
           <Button variant="secondary" onClick={() => run('share')} disabled={busy}>
             <Share2 /> {t('Share')}
+          </Button>
+        )}
+
+        {videoSupported && (
+          <Button variant="secondary" onClick={makeVideo} disabled={busy}>
+            {videoProgress !== null ? <LoaderCircle className="animate-spin" /> : <Clapperboard />}
+            {videoProgress !== null
+              ? t('Making video… {n}%', { n: Math.round(videoProgress * 100) })
+              : t('Route video')}
           </Button>
         )}
       </div>

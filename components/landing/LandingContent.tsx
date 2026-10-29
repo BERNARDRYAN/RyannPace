@@ -135,7 +135,7 @@ export function LandingContent() {
           <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-10">
             <SectionLabel>{t('How it works')}</SectionLabel>
             <h2 className="mt-2 max-w-2xl font-serif text-4xl leading-tight text-ink sm:text-5xl">
-              {t('From finish line to feed in')} <span className="italic">{t('three steps.')}</span>
+              {t('From finish line to feed in')} <span className="inline-block italic">{t('three steps.')}</span>
             </h2>
             <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
               {STEPS.map((step) => (
@@ -174,7 +174,8 @@ export function LandingContent() {
           <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-10">
             <SectionLabel>{t('Why RyannPace')}</SectionLabel>
             <h2 className="mt-2 max-w-2xl font-serif text-4xl leading-tight text-ink sm:text-5xl">
-              {t('Designed like print.')} <span className="italic">{t('Built for runners.')}</span>
+              <span className="inline-block">{t('Designed like print.')}</span>{' '}
+              <span className="inline-block italic">{t('Built for runners.')}</span>
             </h2>
             <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map(({ icon: Icon, title, body }) => (
@@ -196,7 +197,8 @@ export function LandingContent() {
             <div>
               <p className="font-mono text-[11px] tracking-[0.24em] text-white/60 uppercase">{t('Free account')}</p>
               <h2 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">
-                {t('Keep every poster.')} <span className="italic">{t('Reuse every style.')}</span>
+                <span className="inline-block">{t('Keep every poster.')}</span>{' '}
+                <span className="inline-block italic">{t('Reuse every style.')}</span>
               </h2>
               <p className="mt-3 max-w-xl text-white/70">
                 {t(

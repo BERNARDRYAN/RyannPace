@@ -43,10 +43,10 @@ function sanitizeFilename(name: string): string {
   return cleaned || 'ryannpace-workout';
 }
 
-export function downloadBlob(blob: Blob, filename: string): void {
+export function downloadBlob(blob: Blob, filename: string, extension: 'png' | 'mp4' = 'png'): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.download = `${sanitizeFilename(filename)}.png`;
+  link.download = `${sanitizeFilename(filename)}.${extension}`;
   link.href = url;
   document.body.appendChild(link);
   link.click();
@@ -70,11 +70,11 @@ export async function exportPosterAsPng(
   }
 }
 
-/** True when the Web Share API can share image files (mostly mobile browsers). */
-export function canShareFiles(): boolean {
+/** True when the Web Share API can share image (or video) files (mostly mobile browsers). */
+export function canShareFiles(type: 'image/png' | 'video/mp4' = 'image/png'): boolean {
   if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') return false;
   try {
-    const probe = new File([new Blob()], 'probe.png', { type: 'image/png' });
+    const probe = new File([new Blob()], type === 'video/mp4' ? 'probe.mp4' : 'probe.png', { type });
     return navigator.canShare({ files: [probe] });
   } catch {
     return false;
@@ -98,6 +98,28 @@ export async function sharePoster(
     if (error instanceof DOMException && error.name === 'AbortError') return { shared: false, blob };
     throw error;
   }
+}
+
+/**
+ * Shares the route video, or downloads it where sharing isn't available.
+ * Resolves with how it was delivered ('cancelled' if the share sheet was dismissed).
+ */
+export async function deliverVideo(blob: Blob, filename: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  // Phones go straight to the share sheet (Stories); desktops (Windows also has a share sheet) get a file.
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  if (isTouchDevice && canShareFiles('video/mp4')) {
+    const file = new File([blob], `${sanitizeFilename(filename)}.mp4`, { type: 'video/mp4' });
+    try {
+      await navigator.share({ files: [file], title: 'RyannPace' });
+      return 'shared';
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
+      // NotAllowedError: the render outlived the tap's permission window; download instead.
+      if (!(error instanceof DOMException && error.name === 'NotAllowedError')) throw error;
+    }
+  }
+  downloadBlob(blob, filename, 'mp4');
+  return 'downloaded';
 }
 
 export const THUMBNAIL_WIDTH = 480;

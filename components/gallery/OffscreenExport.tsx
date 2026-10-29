@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { PosterData } from '@/components/canvas/PosterRenderer';
 import { PosterRenderer } from '@/components/canvas/PosterRenderer';
 import { POSTER_DIMENSIONS } from '@/lib/poster-presets';
@@ -20,7 +20,9 @@ interface OffscreenExportProps {
 export function OffscreenExport({ data, filename, onDone }: OffscreenExportProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const done = useRef(onDone);
-  done.current = onDone;
+  useLayoutEffect(() => {
+    done.current = onDone;
+  });
   const { width, height } = POSTER_DIMENSIONS[data.config.aspectRatio];
 
   useEffect(() => {

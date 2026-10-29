@@ -429,4 +429,32 @@ export const ZH: Record<string, string> = {
   "You're": '你',
   'off route.': '跑偏了。',
   "This page doesn't exist. Let's get you back on course.": '这个页面不存在，让我们回到正轨。',
+  // ---------- Studio draft, sharing, export guide ----------
+  'Picked up where you left off.': '已恢复你上次编辑的海报。',
+  'Could not open the shared file. Choose it in the Route panel instead.': '无法打开分享的文件，请在“路线”面板中手动选择。',
+  'Where do I find my activity file?': '在哪里找到我的运动文件？',
+  'On connect.garmin.com, open the activity → ⚙ gear icon → Export Original (.fit) or Export to GPX.':
+    '在 connect.garmin.com 打开活动 → ⚙ 齿轮图标 → 导出原始文件（.fit）或导出为 GPX。',
+  'On strava.com in a browser, open your activity → ⋯ menu → Export GPX.':
+    '用浏览器打开 strava.com 上的活动 → ⋯ 菜单 → 导出 GPX。',
+  'In the COROS app, open the activity → share icon → Export data → .fit or .gpx.':
+    '在高驰 App 中打开活动 → 分享图标 → 导出数据 → .fit 或 .gpx。',
+  'On flow.polar.com, open the training session → ⋯ → Export session → GPX or TCX.':
+    '在 flow.polar.com 打开训练记录 → ⋯ → 导出训练 → GPX 或 TCX。',
+  'Let the free Strava app sync your workout, then export it from strava.com as above.':
+    '用免费的 Strava App 同步训练，再按上面的方法从 strava.com 导出。',
+  'On Android, install RyannPace (browser menu → Add to Home screen) and you can share a file straight into it from your Files app.':
+    '在安卓手机上安装 RyannPace（浏览器菜单 → 添加到主屏幕），之后就能在“文件”App 中把运动文件直接分享给它。',
+  Garmin: '佳明',
+  COROS: '高驰',
+  Polar: '博能',
+  'Surprise me': '随机搭配',
+  // ---------- Route video & undo ----------
+  'Route video': '路线动画视频',
+  'Making video… {n}%': '正在生成视频… {n}%',
+  'Video saved. Post it to your Instagram or WhatsApp story.': '视频已保存，发到你的 Instagram 或 WhatsApp 动态吧。',
+  'Turn on the route to make a video.': '请先开启路线，才能生成视频。',
+  'The video could not be made in this browser. Try the PNG instead.': '当前浏览器无法生成视频，请改为导出 PNG。',
+  Undo: '撤销',
+  Redo: '重做',
 };

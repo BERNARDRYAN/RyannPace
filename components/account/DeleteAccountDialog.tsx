@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, TriangleAlert } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAccountStore } from '@/store/useAccountStore';
 import { useGalleryStore } from '@/store/useGalleryStore';
 import { tr, useT } from '@/store/useLocaleStore';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 /** Confirmation for permanent account deletion: the user must type DELETE. */
 export function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const t = useT();
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,7 +49,7 @@ export function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose:
       useAccountStore.setState({ status: 'signed-out', user: null, presets: [] });
       useAccountStore.getState().showNotice({ kind: 'success', text: tr('Your account and all its data were deleted.') });
       onClose();
-      window.location.assign('/');
+      router.push('/');
     } catch {
       setError('Network error. Check your connection.');
     } finally {

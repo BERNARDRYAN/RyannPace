@@ -1,8 +1,9 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { Dices, Lock } from 'lucide-react';
 import { usePosterStore } from '@/store/usePosterStore';
-import { TEMPLATES } from '@/lib/poster-presets';
+import { TEMPLATES, TEMPLATE_PALETTES } from '@/lib/poster-presets';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TemplateId } from '@/types/poster';
 import { useT } from '@/store/useLocaleStore';
@@ -81,6 +82,27 @@ function TemplateGlyph({ id }: { id: TemplateId }) {
       </svg>
       <div className="text-[11px] leading-none font-extrabold text-ink">04&apos;45</div>
     </div>
+  );
+}
+
+function pick<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+/** Rolls a new template + palette combination, always different from the current one. */
+export function SurpriseButton() {
+  const t = useT();
+  const surprise = () => {
+    const { config, setTemplate, setPalette } = usePosterStore.getState();
+    const others = TEMPLATES.filter((tpl) => tpl.available && tpl.id !== config.templateId);
+    const templateId = pick(others).id;
+    setTemplate(templateId);
+    setPalette(pick(TEMPLATE_PALETTES[templateId]));
+  };
+  return (
+    <Button variant="ghost" size="sm" onClick={surprise} className="-my-1 -mr-2">
+      <Dices /> {t('Surprise me')}
+    </Button>
   );
 }
 
